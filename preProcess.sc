@@ -5,9 +5,9 @@ import $file.common, common._, Args._
 import $file.spoofax, spoofax._
 import org.spoofax.jsglr2.JSGLR2Variant
 import org.spoofax.jsglr2.integration.IntegrationVariant
-import org.spoofax.jsglr2.integration.ParseTableVariant
+import org.metaborg.parsetable.ParseTableVariant
 
-def validate(implicit args: Args) = {
+def preProcess(implicit args: Args) = {
     println("Validate sources...")
 
     config.languages.foreach { language =>
@@ -22,7 +22,7 @@ def validate(implicit args: Args) = {
         val jsglr1 = getJSGLR1(language.parseTablePath)
 
         timed("validate " + language.id) {
-            language.sourceFiles.foreach { file =>
+            language.sourceFilesBatch.foreach { file =>
                 val input = read! file
 
                 val jsglr2AST = jsglr2.parse(input)
@@ -44,4 +44,4 @@ def validate(implicit args: Args) = {
 }
 
 @main
-def ini(args: String*) = withArgs(args :_ *)(validate(_))
+def ini(args: String*) = withArgs(args :_ *)(preProcess(_))
