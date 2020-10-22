@@ -9,5 +9,6 @@ if [[ "${1-}" == "clean" || ! -d "$VENV_DIR" ]]
 then
     rm -rf "$VENV_DIR"
     python3 -m venv "$VENV_DIR"
+    "$VENV_DIR/bin/python3" -m pip install --upgrade wheel
     "$VENV_DIR/bin/python3" -m pip install matplotlib pdftools
 fi
