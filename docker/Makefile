@@ -16,6 +16,7 @@ build-spoofax:
 
 build-jsglr2:
 	cd /jsglr2evaluation/data/spoofax/jsglr && git checkout $(JSGLR_VERSION) && git pull
+	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr && mvn install
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2 && mvn install
 
 evaluation:
