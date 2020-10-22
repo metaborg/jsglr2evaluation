@@ -67,6 +67,20 @@ suite.languages.foreach { language =>
         }
     }
 
+    val sourceSizes =
+        language.sources.batch.flatMap { source =>
+            val sourceDir = language.sourcesDir / "batch" / source.id
+            val files = ls! sourceDir |? (_.ext == language.extension)
+
+            val sourceSizes = files.map(_.size)
+
+            write.over(language.sourcesDir / "batch" / source.id / "sizes.csv", sourceSizes.mkString("\n"))
+
+            sourceSizes
+        }
+    
+    write.over(language.sourcesDir / "batch" / "sizes.csv", sourceSizes.mkString("\n"))
+
     timed("persist dynamic parse tables") {
         persistDynamicParseTables
     }
