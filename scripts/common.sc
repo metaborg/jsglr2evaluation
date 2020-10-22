@@ -57,7 +57,7 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
 
 sealed trait ParseTable {
     def term(language: Language)(implicit suite: Suite) = new FileInputStream(termPath(language).toString)
-    def termPath(language: Language)(implicit suite: Suite): InputStream
+    def termPath(language: Language)(implicit suite: Suite): Path
 }
 case class GitSpoofax(repo: String, subDir: String, dynamic: Boolean = false) extends ParseTable {
     def repoDir(language: Language)(implicit suite: Suite) = Suite.languagesDir / language.id
