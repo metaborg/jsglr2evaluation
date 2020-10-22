@@ -3,8 +3,8 @@ options(warn=1)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args) != 2) {
-  dir        <- "~/jsglr2evaluation"
-  reportsDir <- "~/jsglr2evaluation/reports"
+  dir        <- "~/jsglr2evaluation-data"
+  reportsDir <- "~/jsglr2evaluation-data/reports"
 } else {
   dir        <- args[1]
   reportsDir <- args[2]

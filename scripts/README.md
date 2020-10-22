@@ -5,10 +5,11 @@
  - Java 8
  - Ammonite for Scala scripting: https://ammonite.io/
  - R: https://www.r-project.org/ (in particular, `Rscript`)
+ - Python
 
 ## Run
 
-Execute everything with defaults:
+Execute everything with defaults, which expects Spoofax at `~/spoofax/releng` and will use `~/jsglr2evaluation-data` as working directory:
 
 ```
 make all
@@ -16,20 +17,20 @@ make all
 
 ## Config
 
-Specify directory for languages, sources, measurements, etc., with `DIR` (defaults to `~/jsglr2evaluation`):
+Specify Spoofax location with `SPOOFAX_DIR`:
 
 ```
-make DIR=~/jsglr2evaluation all
+make SPOOFAX_DIR=~/spoofax/releng all
 ```
 
-Specify number of warmup and benchmark iterations with `ITERATIONS` (defaults to `1`):
+Specify working directory for languages, sources, measurements, results, etc., with `DATA_DIR` (defaults to `~/jsglr2evaluation-data`):
 
 ```
-make ITERATIONS=10 benchmarks
+make DATA_DIR=~/jsglr2evaluation-data all
 ```
 
-Specify path to generate reports (LaTeX tables and plots with R) to with `REPORTSDIR` (defaults to `~/jsglr2evaluation/reports`):
+Specify path to generate reports (LaTeX tables and plots with R) to with `REPORTS_DIR` (defaults to `~/jsglr2evaluation-data/reports`):
 
 ```
-make REPORTSDIR=~/path/to/paper/generated all
+make REPORTS_DIR=~/path/to/paper/generated all
 ```

@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import pdftools
 
 try:
-    DIR = environ["JSGLR2EVALUATION_WORKING_DIR"]
+    DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
     REPORTS_DIR = environ["JSGLR2EVALUATION_REPORTS_DIR"]
 except KeyError:
-    print("Both environment variables JSGLR2EVALUATION_WORKING_DIR and JSGLR2EVALUATION_REPORTS_DIR should be defined!")
+    print("Both environment variables JSGLR2EVALUATION_DATA_DIR and JSGLR2EVALUATION_REPORTS_DIR should be defined!")
     exit(1)
 
 COLORS = {
@@ -92,7 +92,7 @@ def plot_times_vs_changes_3D(rows):
     return fig
 
 
-incremental_results_dir = path.join(DIR, "results", "incremental")
+incremental_results_dir = path.join(DATA_DIR, "results", "incremental")
 
 if (path.isdir(incremental_results_dir)):
     print("Creating plots for incremental...")

@@ -21,6 +21,6 @@ build-jsglr2:
 evaluation:
 	cd scripts && \
 	make \
-		DIR=/jsglr2evaluation/data \
+		DATA_DIR=/jsglr2evaluation/data \
 		SPOOFAX_DIR=/jsglr2evaluation/data/spoofax \
 		$(EVALUATION_TARGET)

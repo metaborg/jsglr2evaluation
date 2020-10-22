@@ -1,5 +1,5 @@
 
-Build the image with tag `jsglr2evaluation` (not from this directory, but from the parent directory `jsglr2evaluation`):
+Build the image with tag `jsglr2evaluation` (not from this directory, but from the root of the repository):
 
 ```
 docker build -f docker/Dockerfile -t jsglr2evaluation .
