@@ -101,7 +101,7 @@ $(DATA_DIR)/archive.tar.gz: $(DATA_DIR)/measurements $(DATA_DIR)/benchmarks $(DA
 publish: websiteRepo addToWebsite websitePush
 
 websiteRepo:
-	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi;
+	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi
 	cd $(DATA_DIR)/website && git pull
 
 addToWebsite: $(DATA_DIR)/archive.tar.gz
@@ -111,7 +111,7 @@ websitePush:
 	cd $(DATA_DIR)/website && \
 		git add -A && \
 		git commit -m "Evaluation results" && \
-		git push https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git
+		git push
 
 cleanData:
 	-rm -r $(DATA_DIR)/*
