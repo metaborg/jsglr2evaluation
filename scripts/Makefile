@@ -127,5 +127,8 @@ websitePush:
 		git commit -m "Evaluation results" && \
 		git push https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git
 
+cleanData:
+	-rm -r $(DATA_DIR)
+
 cleanM2:
 	-rm -r $(DATA_DIR)/m2-repo
