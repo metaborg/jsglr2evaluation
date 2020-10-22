@@ -21,6 +21,10 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         case parseTable @ GitSpoofax(_, _, dynamic) if dynamic => parseTable.bin(this)
         case _ => parseTable.term(this)
     }
+    def parseTablePath(implicit suite: Suite) = parseTable match {
+        case parseTable @ GitSpoofax(_, _, dynamic) if dynamic => parseTable.binPath(this)
+        case _ => parseTable.termPath(this)
+    }
     def dynamicParseTableGeneration = parseTable match {
         case GitSpoofax(_, _, dynamic) => dynamic
         case _ => false
@@ -52,20 +56,20 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
 }
 
 sealed trait ParseTable {
-    def term(language: Language)(implicit suite: Suite): InputStream
+    def term(language: Language)(implicit suite: Suite) = new FileInputStream(termPath(language).toString)
+    def termPath(language: Language)(implicit suite: Suite): InputStream
 }
 case class GitSpoofax(repo: String, subDir: String, dynamic: Boolean = false) extends ParseTable {
     def repoDir(language: Language)(implicit suite: Suite) = Suite.languagesDir / language.id
     def spoofaxProjectDir(language: Language)(implicit suite: Suite) = repoDir(language) / RelPath(subDir)
     
     def termPath(language: Language)(implicit suite: Suite) = spoofaxProjectDir(language) / "target" / "metaborg" / "sdf.tbl"
-    def term(language: Language)(implicit suite: Suite) = new FileInputStream(termPath(language).toString)
     
     def binPath(language: Language)(implicit suite: Suite) = spoofaxProjectDir(language) / "target" / "metaborg" / "table.bin"
     def bin(language: Language)(implicit suite: Suite) = new FileInputStream(binPath(language).toString)
 }
 case class LocalParseTable(file: String) extends ParseTable {
-    def term(language: Language)(implicit suite: Suite) = new FileInputStream((pwd / RelPath(file)).toString)
+    def termPath(language: Language)(implicit suite: Suite) = pwd / RelPath(file)
 }
 
 object ParseTable {
