@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR cleanReports publish websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR reportPy cleanReports publish websiteRepo addToWebsite websitePush
 
 DATA_DIR=~/jsglr2evaluation-data
 REPORTS_DIR=$(DATA_DIR)/reports
@@ -71,19 +71,20 @@ cleanPostProcessing:
 	-rm -r $(DATA_DIR)/results
 
 
-# Reporting in Latex tables
+# Reporting in Latex tables (batch)
 reportLatex:
 	amm reportLatex.sc
 
-# Reporting in plots
+# Reporting in plots (batch)
 reportR:
 	Rscript report.R
 
 .venv:
 	./setup-venv.sh
 
+# Reporting in plots (incremental)
+# Cannot activate venv using `source` in Makefile, so directly calling Python instead: https://stackoverflow.com/a/57257640
 reportPy:
-	# Cannot activate venv using `source` in Makefile: https://stackoverflow.com/a/57257640
 	.venv/bin/python report.py
 
 cleanReports:
