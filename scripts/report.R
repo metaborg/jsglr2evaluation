@@ -1,32 +1,12 @@
-options(warn=1)
+source(common.R)
 
-args = commandArgs(trailingOnly=TRUE)
-
-if (length(args) != 2) {
-  dir        <- "~/jsglr2evaluation-data"
-  reportsDir <- "~/jsglr2evaluation-data/reports"
-} else {
-  dir        <- args[1]
-  reportsDir <- args[2]
-}
-
-setwd(dir)
+dir.create(reportsDir, showWarnings = FALSE)
 
 colors <- c("#8c510a", "#d8b365", "#f6e8c3", "#f5f5f5", "#c7eae5", "#5ab4ac", "#01665e") # Color per parser variant, colorblind safe: http://colorbrewer2.org/#type=diverging&scheme=BrBG&n=6
 symbols <- c(0,2,5) # Color per language
 
-savePlot <- function(plot, filename) {
-  png(file=paste(filename, ".png", sep=""))
-  plot()
-  dev.off()
-
-  pdf(file=paste(filename, ".pdf", sep=""))
-  plot()
-  dev.off()
-}
-
 batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows, getHighs) {
-  data     <- read.csv(file=inputFile, header=TRUE, sep=",")
+  data     <- read.csv(file=paste(dir, inputFile, sep=""), header=TRUE, sep=",")
   variants <- unique(data$variant)
   
   scores <- tapply(data$score,      list(data$variant, data$language), function(x) c(x = x))
@@ -37,8 +17,6 @@ batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows,
   scores <- scores[variants,]
   lows   <-   lows[variants,]
   highs  <-  highs[variants,]
-  
-  dir.create(reportsDir, showWarnings = FALSE)
   
   savePlot(function() {
     # https://datascienceplus.com/building-barplots-with-error-bars/
@@ -68,8 +46,6 @@ perFileBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
   data <- read.csv(file=inputFile, header=TRUE, sep=",")
   data <- data[data$variant == "standard",]
   languages <- unique(data$language)
-  
-  dir.create(reportsDir, showWarnings = FALSE)
 
   savePlot(function() {
     plot(data$size / 1000,
