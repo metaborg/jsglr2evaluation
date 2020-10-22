@@ -71,7 +71,7 @@ suite.languages.foreach { language =>
             val selectedFiles =
                 suite.shrinkBatchSources match {
                     case Some(size) if files.size > size => scala.util.Random.shuffle(files).take(size)
-                    case None => files
+                    case _ => files
                 }
 
             // Copy all files to the aggregated directory
