@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR cleanReports publish websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR cleanReports publish websiteRepo addToWebsite websitePush
 
 DATA_DIR=~/jsglr2evaluation-data
 REPORTS_DIR=$(DATA_DIR)/reports
@@ -8,9 +8,9 @@ JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
 MEASUREMENTS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.measure/target/org.spoofax.jsglr2.measure-2.6.0-SNAPSHOT.jar
 BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsglr2.benchmark-2.6.0-SNAPSHOT.jar
 
-all: languages sources preProcessing measurements benchmarks postProcessing reportLatex reportR .venv reportPy publish
+all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reportLatex reportR .venv reportPy publish
 
-clean: cleanLanguages cleanSources cleanPreProcessing cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports
+clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports
 
 cleanAll: clean all
 
@@ -19,9 +19,7 @@ export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
 export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
 
 # Pull Spoofax languages from GitHub and build them
-languages: $(DATA_DIR)/languages
-
-$(DATA_DIR)/languages: setupLanguages.sc common.sc
+languages:
 	amm setupLanguages.sc
 
 cleanLanguages:
@@ -29,9 +27,7 @@ cleanLanguages:
 
 
 # Setup evaluation corpus by pulling projects from GitHub
-sources: $(DATA_DIR)/sources
-
-$(DATA_DIR)/sources: setupSources.sc common.sc
+sources:
 	amm setupSources.sc
 
 cleanSources:
@@ -39,19 +35,12 @@ cleanSources:
 
 
 # Validate absence of invalid programs and aggregate files
-preProcessing: $(DATA_DIR)/sources/validated
-
-$(DATA_DIR)/sources/validated: $(DATA_DIR)/languages $(DATA_DIR)/sources preProcess.sc common.sc
-	JAVA_OPTS="-Xmx8G" amm preProcess.sc && touch $(DATA_DIR)/sources/validated
-
-cleanPreProcessing:
-	-rm $(DATA_DIR)/sources/validated
+preProcessing:
+	JAVA_OPTS="-Xmx8G" amm preProcess.sc
 
 
 # Perform measurements
-measurements: $(DATA_DIR)/measurements
-
-$(DATA_DIR)/measurements: $(DATA_DIR)/sources/validated $(MEASUREMENTS_JAR) measurements.sc spoofax.sc spoofaxDeps.sc common.sc
+measurements:
 	amm measurements.sc
 
 $(MEASUREMENTS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.measure/src
@@ -63,9 +52,7 @@ cleanMeasurements:
 
 
 # Performs benchmarks
-benchmarks: $(DATA_DIR)/benchmarks
-
-$(DATA_DIR)/benchmarks: $(DATA_DIR)/sources/validated $(BENCHMARKS_JAR) benchmarks.sc spoofax.sc spoofaxDeps.sc common.sc
+benchmarks:
 	amm benchmarks.sc
 
 $(BENCHMARKS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
@@ -77,9 +64,7 @@ cleanBenchmarks:
 
 
 # Post process results from measurements and benchmarks
-postProcessing: $(DATA_DIR)/results
-
-$(DATA_DIR)/results: $(DATA_DIR)/benchmarks $(DATA_DIR)/measurements postProcess.sc common.sc
+postProcessing:
 	amm postProcess.sc
 
 cleanPostProcessing:
@@ -87,17 +72,17 @@ cleanPostProcessing:
 
 
 # Reporting in Latex tables
-reportLatex: $(DATA_DIR)/results reportLatex.sc spoofax.sc spoofaxDeps.sc common.sc
+reportLatex:
 	amm reportLatex.sc
 
 # Reporting in plots
-reportR: $(DATA_DIR)/results report.R
+reportR:
 	Rscript report.R
 
 .venv:
 	./setup-venv.sh
 
-reportPy: $(DATA_DIR)/results report.py .venv
+reportPy:
 	# Cannot activate venv using `source` in Makefile: https://stackoverflow.com/a/57257640
 	.venv/bin/python report.py
 
