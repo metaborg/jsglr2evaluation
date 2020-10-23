@@ -28,7 +28,7 @@ def withNav(tabs: Seq[(String, String, String)]) = {
         |</div>""".stripMargin
 }
 
-def withTemplate(title: String, content: String) =
+def withTemplate(title: String, config: String, content: String) =
     s"""|<!doctype html>
         |<html lang="en">
         |<head>
@@ -40,7 +40,16 @@ def withTemplate(title: String, content: String) =
         |</head>
         |<body>
         |  <div class="container">
-        |    ${indent(4, content)}
+        |    <div class="row">
+        |      <div class="col">
+        |        <p><a href="../index.html">&larr; Back to index</a></p>
+        |        <h1>$id</h1>
+        |        <p><a href="./archive.tar.gz" class="btn btn-primary">Download Archive</a></p>
+        |        <pre>$config</pre>
+        |        <br />
+        |        ${indent(8, content)}
+        |      </div>
+        |    </div>
         |  </div>
         |<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
         |<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
@@ -104,17 +113,8 @@ val tabs = Seq(
 
 write(
     dir / "index.html",
-    withTemplate(id,
-        s"""|<div class="row">
-            |  <div class="col">
-            |    <p><a href="../index.html">&larr; Back to index</a></p>
-            |    <h1>$id</h1>
-            |    <p><a href="./archive.tar.gz" class="btn btn-primary">Download Archive</a></p>
-            |    <pre>$config</pre>
-            |    <br />
-            |    <p><strong>Iterations:</strong> ${suite.iterations}</p>
-            |    ${indent(4, withNav(tabs))}
-            |  </div>
-            |</div>""".stripMargin
+    withTemplate(id, config,
+        s"""|<p><strong>Iterations:</strong> ${suite.iterations}</p>
+            |${indent(4, withNav(tabs))}""".stripMargin
     )
 )
