@@ -148,6 +148,8 @@ object Suite {
     implicit def reportsDir      = suite.reportsDir
     implicit def websiteDir      = suite.websiteDir
     
+    implicit def inScope(scope: String) = suite.scopes.contains(scope)
+    
     implicit def parseTableMeasurementsPath = resultsDir / "measurements-parsetable.csv"
     implicit def parsingMeasurementsPath    = resultsDir / "measurements-parsing.csv"
 
