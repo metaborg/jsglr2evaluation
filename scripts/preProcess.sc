@@ -67,19 +67,24 @@ suite.languages.foreach { language =>
         }
     }
 
-    val sourceSizes =
+    val sizes =
         language.sources.batch.flatMap { source =>
             val sourceDir = language.sourcesDir / "batch" / source.id
             val files = ls! sourceDir |? (_.ext == language.extension)
+            val sizes = files.map(_.size)
+            
+            if (sizes.nonEmpty) {
+                write.over(language.sourcesDir / "batch" / source.id / "sizes.csv", sizes.mkString("\n") + "\n")            
+                %("Rscript", "sourceSizes.R", sourceDir, source.id)(pwd)
+            }
 
-            val sourceSizes = files.map(_.size)
-
-            write.over(language.sourcesDir / "batch" / source.id / "sizes.csv", sourceSizes.mkString("\n"))
-
-            sourceSizes
+            sizes
         }
     
-    write.over(language.sourcesDir / "batch" / "sizes.csv", sourceSizes.mkString("\n"))
+    if (sizes.nonEmpty) {
+        write.over(language.sourcesDir / "batch" / "sizes.csv", sizes.mkString("\n") + "\n")
+        %("Rscript", "sourceSizes.R", language.sourcesDir / "batch", language.name)(pwd)
+    }
 
     timed("persist dynamic parse tables") {
         persistDynamicParseTables
