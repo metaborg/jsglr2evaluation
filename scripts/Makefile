@@ -92,7 +92,7 @@ reportLatex: $(DATA_DIR)/results reportLatex.sc spoofax.sc spoofaxDeps.sc common
 
 # Reporting in plots
 reportR: $(DATA_DIR)/results report.R
-	Rscript report.R $(DATA_DIR) $(REPORTS_DIR)
+	Rscript report.R
 
 .venv:
 	./setup-venv.sh
