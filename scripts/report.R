@@ -6,7 +6,12 @@ colors <- c("#8c510a", "#d8b365", "#f6e8c3", "#f5f5f5", "#c7eae5", "#5ab4ac", "#
 symbols <- c(0,2,5) # Color per language
 
 batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows, getHighs) {
-  data     <- read.csv(file=paste(dir, inputFile, sep="/"), header=TRUE, sep=",")
+  inputPath <- paste(dataDir, inputFile, sep="/")
+  
+  if (!file.exists(inputPath))
+    return()
+  
+  data     <- read.csv(file=inputPath, header=TRUE, sep=",")
   variants <- unique(data$variant)
   
   scores <- tapply(data$score,      list(data$variant, data$language), function(x) c(x = x))
@@ -43,7 +48,12 @@ batchThroughputBenchmarksPlot <- function(inputFile, outputFile, dimension, unit
 }
 
 perFileBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
-  data <- read.csv(file=paste(dir, inputFile, sep="/"), header=TRUE, sep=",")
+  inputPath <- paste(dataDir, inputFile, sep="/")
+  
+  if (!file.exists(inputPath))
+    return()
+  
+  data <- read.csv(file=inputPath, header=TRUE, sep=",")
   data <- data[data$variant == "standard",]
   languages <- unique(data$language)
 
