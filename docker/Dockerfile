@@ -41,13 +41,14 @@ RUN git config --global user.email "j.denkers@tudelft.nl"
 RUN echo ".DS_Store" >> ~/.gitignore_global
 RUN git config --global core.excludesfile ~/.gitignore_global
 
+# Install required Python packages for scripts into a virtual environment
+COPY scripts/setup-venv.sh scripts/setup-venv.sh
+RUN ./scripts/setup-venv.sh
+
 # Add scripts
 COPY scripts scripts
 COPY parsetables parsetables
 COPY docker/Makefile .
-
-# Install required Python packages for scripts into a virtual environment
-RUN ./scripts/setup-venv.sh
 
 ENV SPOOFAX_VERSION=master
 ENV JSGLR_VERSION=develop/jsglr2

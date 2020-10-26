@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR cleanReports publish websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR reportPy cleanReports publish websiteRepo addToWebsite websitePush
 
 DATA_DIR=~/jsglr2evaluation-data
 REPORTS_DIR=$(DATA_DIR)/reports
@@ -71,19 +71,20 @@ cleanPostProcessing:
 	-rm -r $(DATA_DIR)/results
 
 
-# Reporting in Latex tables
+# Reporting in Latex tables (batch)
 reportLatex:
 	amm reportLatex.sc
 
-# Reporting in plots
+# Reporting in plots (batch)
 reportR:
 	Rscript report.R
 
 .venv:
 	./setup-venv.sh
 
+# Reporting in plots (incremental)
+# Cannot activate venv using `source` in Makefile, so directly calling Python instead: https://stackoverflow.com/a/57257640
 reportPy:
-	# Cannot activate venv using `source` in Makefile: https://stackoverflow.com/a/57257640
 	.venv/bin/python report.py
 
 cleanReports:
@@ -100,7 +101,7 @@ $(DATA_DIR)/archive.tar.gz: $(DATA_DIR)/measurements $(DATA_DIR)/benchmarks $(DA
 publish: websiteRepo addToWebsite websitePush
 
 websiteRepo:
-	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi;
+	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi
 	cd $(DATA_DIR)/website && git pull
 
 addToWebsite: $(DATA_DIR)/archive.tar.gz
@@ -110,7 +111,7 @@ websitePush:
 	cd $(DATA_DIR)/website && \
 		git add -A && \
 		git commit -m "Evaluation results" && \
-		git push https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git
+		git push
 
 cleanData:
 	-rm -r $(DATA_DIR)/*
