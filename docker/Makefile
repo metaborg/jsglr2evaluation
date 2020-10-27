@@ -30,9 +30,6 @@ build-jsglr2-measure: pull-jsglr2
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.measure && mvn install
 
 
+# Note that DATA_DIR and SPOOFAX_DIR are set as environment variables in Dockerfile
 evaluation:
-	cd scripts && \
-	make \
-		DATA_DIR=/jsglr2evaluation/data \
-		SPOOFAX_DIR=/jsglr2evaluation/data/spoofax \
-		$(EVALUATION_TARGET)
+	cd scripts && make $(EVALUATION_TARGET)

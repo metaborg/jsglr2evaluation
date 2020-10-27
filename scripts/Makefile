@@ -1,22 +1,25 @@
 .PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportR reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
 
-DATA_DIR=~/jsglr2evaluation-data
-REPORTS_DIR=$(DATA_DIR)/reports
+# Configuration (using environment variables or arguments passed to make)
+DATA_DIR?=~/jsglr2evaluation-data
+REPORTS_DIR?=$(DATA_DIR)/reports
+SPOOFAX_DIR?=~/spoofax/releng
 
-SPOOFAX_DIR=~/spoofax/releng
+# Shorthands
 JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
 MEASUREMENTS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.measure/target/org.spoofax.jsglr2.measure-2.6.0-SNAPSHOT.jar
 BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsglr2.benchmark-2.6.0-SNAPSHOT.jar
+
+# Environment variables passed to the Ammonite/Python/R scripts
+export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
+export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
+export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
 
 all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reports publish
 
 clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports cleanArchive
 
 cleanAll: clean all
-
-export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
-export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
-export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
 
 # Pull Spoofax languages from GitHub and build them
 languages:
