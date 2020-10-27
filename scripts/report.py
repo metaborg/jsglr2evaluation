@@ -58,7 +58,7 @@ def plot_times(rows, parser_types):
     for column in parser_types:
         x, y, yerr = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
                            for row in rows if row[column]))
-        ax1.errorbar(x, y, yerr, fmt=COLORS[column], label=column)
+        ax1.errorbar(x, y, yerr, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
 
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
