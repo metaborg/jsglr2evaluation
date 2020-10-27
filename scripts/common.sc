@@ -1,8 +1,7 @@
-import $ivy.`com.lihaoyi::ammonite-ops:1.8.1`
+import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 import $ivy.`io.circe::circe-generic-extras:0.13.0`
 import $ivy.`io.circe::circe-yaml:0.11.0-M1`
 
-import ammonite.ops._
 import cats.syntax.either._
 import io.circe._
 import io.circe.generic.extras.auto._
