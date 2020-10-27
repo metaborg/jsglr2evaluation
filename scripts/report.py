@@ -63,7 +63,7 @@ def plot_times(rows, parser_types):
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines1 + lines2, labels1 + labels2, loc=2)
+    ax2.legend(lines1 + lines2, labels1 + labels2, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
 
     fig.tight_layout()
     return fig
