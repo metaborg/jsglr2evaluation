@@ -52,7 +52,7 @@ def plot_times(rows, parser_types):
     ax2.set_ylabel("Change size (bytes)", color="y")
     ax2.tick_params(labelcolor="y")
 
-    x, y = zip(*((int(row["i"]), int(row["Removed"]) + int(row["Added"])) for row in rows))
+    x, y = zip(*((int(row["i"]), int(row["Removed"]) + int(row["Added"])) for row in rows if row["Added"]))
     ax2.plot(x, y, "yo", label="Change size", markersize=3)
 
     for column in parser_types:
@@ -103,8 +103,7 @@ if (path.isdir(incremental_results_dir)):
             print(f"  {csv_basename}")
 
             result_data = read_csv(result_file.path)
-            initial_size = int(result_data[0]["Added"])
-            result_data = [row for row in result_data if int(row["Removed"]) + int(row["Added"]) < initial_size]
+            result_data[0]["Added"] = None
             result_data_except_first = result_data[1:]
 
             report_path = path.join(REPORTS_DIR, "incremental", language.name, csv_basename)
