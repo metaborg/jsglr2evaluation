@@ -4,12 +4,8 @@ from os import makedirs, path, scandir, remove, environ
 import matplotlib.pyplot as plt
 import pdftools
 
-try:
-    DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
-    REPORTS_DIR = environ["JSGLR2EVALUATION_REPORTS_DIR"]
-except KeyError:
-    print("Both environment variables JSGLR2EVALUATION_DATA_DIR and JSGLR2EVALUATION_REPORTS_DIR should be defined!")
-    exit(1)
+DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
+REPORTS_DIR = environ["JSGLR2EVALUATION_REPORTS_DIR"]
 
 COLORS = {
     "Batch": "rs",
@@ -25,15 +21,15 @@ def read_csv(p):
         return [{h: v for h, v in zip(header, line)} for line in lines[1:]]
 
 
-def base_plot(plot_size, xlabel, ylabel, zlabel="", subplot_kwargs=None):
+def base_plot(plot_size, x_label, y_label, z_label="", subplot_kwargs=None):
     fig = plt.figure(figsize=plot_size[:2])
     ax = fig.add_subplot(**(subplot_kwargs if subplot_kwargs is not None else {}))
 
     ax.margins(*(0.1 / x for x in plot_size))
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    if zlabel:
-        ax.set_zlabel(zlabel)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if z_label:
+        ax.set_zlabel(z_label)
 
     return fig, ax
 
@@ -56,9 +52,9 @@ def plot_times(rows, parser_types):
     ax2.plot(x, y, "yo", label="Change size", markersize=3)
 
     for column in parser_types:
-        x, y, yerr = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
-                           for row in rows if row[column]))
-        ax1.errorbar(x, y, yerr, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+        x, y, y_err = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
+                            for row in rows if row[column]))
+        ax1.errorbar(x, y, y_err, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
 
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
@@ -80,7 +76,7 @@ def plot_times_vs_changes(rows, unit, *changes):
     return fig
 
 
-def plot_times_vs_changes_3D(rows):
+def plot_times_vs_changes_3d(rows):
     fig, ax = base_plot((6, 6, 6), "Change size (bytes)", "Change size (chunks)", "Parse time (ms)",
                         {"projection": "3d"})
 
@@ -92,38 +88,44 @@ def plot_times_vs_changes_3D(rows):
     return fig
 
 
-incremental_results_dir = path.join(DATA_DIR, "results", "incremental")
+def main():
+    incremental_results_dir = path.join(DATA_DIR, "results", "incremental")
 
-if (path.isdir(incremental_results_dir)):
-    print("Creating plots for incremental...")
-    for language in scandir(incremental_results_dir):
-        print(f" {language.name}")
-        for result_file in scandir(language.path):
-            csv_basename = ".".join(result_file.name.split(".")[:-1])
-            print(f"  {csv_basename}")
+    if path.isdir(incremental_results_dir):
+        print("Creating plots for incremental...")
+        for language in scandir(incremental_results_dir):
+            print(f" {language.name}")
+            for result_file in scandir(language.path):
+                csv_basename = ".".join(result_file.name.split(".")[:-1])
+                print(f"  {csv_basename}")
 
-            result_data = read_csv(result_file.path)
-            result_data[0]["Added"] = None
-            result_data_except_first = result_data[1:]
+                result_data = read_csv(result_file.path)
+                result_data[0]["Added"] = None
+                result_data_except_first = result_data[1:]
 
-            report_path = path.join(REPORTS_DIR, "incremental", language.name, csv_basename)
-            makedirs(report_path, exist_ok=True)
+                report_path = path.join(REPORTS_DIR, "incremental", language.name, csv_basename)
+                makedirs(report_path, exist_ok=True)
 
-            reports = [
-                (plot_times(result_data, ["Batch", "Incremental", "IncrementalNoCache"]), "report"),
-                (plot_times(result_data_except_first, ["Incremental"]), "report-except-first"),
-                (plot_times_vs_changes(result_data_except_first, "bytes", "Added", "Removed"), "report-time-vs-bytes"),
-                (plot_times_vs_changes(result_data_except_first, "chunks", "Changes"), "report-time-vs-changes"),
-                (plot_times_vs_changes_3D(result_data_except_first), "report-time-vs-changes-3D"),
-            ]
+                reports = [
+                    (plot_times(result_data, ["Batch", "Incremental", "IncrementalNoCache"]), "report"),
+                    (plot_times(result_data_except_first, ["Incremental"]), "report-except-first"),
+                    (plot_times_vs_changes(result_data_except_first, "bytes", "Added", "Removed"),
+                     "report-time-vs-bytes"),
+                    (plot_times_vs_changes(result_data_except_first, "chunks", "Changes"), "report-time-vs-changes"),
+                    (plot_times_vs_changes_3d(result_data_except_first), "report-time-vs-changes-3D"),
+                ]
 
-            for fig, name in reports:
-                fig.savefig(path.join(report_path, name + ".pdf"))
-                fig.savefig(path.join(report_path, name + ".svg"))
+                for fig, name in reports:
+                    fig.savefig(path.join(report_path, name + ".pdf"))
+                    fig.savefig(path.join(report_path, name + ".svg"))
 
-            plt.close("all")
+                plt.close("all")
 
-            merged_path = path.join(report_path, "merged.pdf")
-            if path.exists(merged_path):
-                remove(merged_path)
-            pdftools.pdf_merge([path.join(report_path, name + ".pdf") for _, name in reports], merged_path)
+                merged_path = path.join(report_path, "merged.pdf")
+                if path.exists(merged_path):
+                    remove(merged_path)
+                pdftools.pdf_merge([path.join(report_path, name + ".pdf") for _, name in reports], merged_path)
+
+
+if __name__ == '__main__':
+    main()
