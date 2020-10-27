@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reportLatex reportR reportPy cleanReports publish websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportR reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
 
 DATA_DIR=~/jsglr2evaluation-data
 REPORTS_DIR=$(DATA_DIR)/reports
@@ -8,9 +8,9 @@ JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
 MEASUREMENTS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.measure/target/org.spoofax.jsglr2.measure-2.6.0-SNAPSHOT.jar
 BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsglr2.benchmark-2.6.0-SNAPSHOT.jar
 
-all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reportLatex reportR .venv reportPy publish
+all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reports publish
 
-clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports
+clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports cleanArchive
 
 cleanAll: clean all
 
@@ -71,6 +71,8 @@ cleanPostProcessing:
 	-rm -r $(DATA_DIR)/results
 
 
+reports: reportLatex reportR .venv reportPy
+
 # Reporting in Latex tables (batch)
 reportLatex:
 	amm reportLatex.sc
@@ -92,19 +94,19 @@ cleanReports:
 
 
 # Archive and publish reports to website
-archive: $(DATA_DIR)/archive.tar.gz
+publish: cleanArchive archive websiteRepo addToWebsite websitePush
 
-$(DATA_DIR)/archive.tar.gz: $(DATA_DIR)/measurements $(DATA_DIR)/benchmarks $(DATA_DIR)/results $(REPORTS_DIR)
+archive:
 	cd $(DATA_DIR) && tar -czf archive.tar.gz measurements benchmarks results -C $(REPORTS_DIR)/.. reports
 
-# Publish on website
-publish: websiteRepo addToWebsite websitePush
+cleanArchive:
+	-rm $(DATA_DIR)/archive.tar.gz
 
 websiteRepo:
 	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi
 	cd $(DATA_DIR)/website && git pull
 
-addToWebsite: $(DATA_DIR)/archive.tar.gz
+addToWebsite:
 	amm addToWebsite.sc
 
 websitePush:
@@ -112,6 +114,7 @@ websitePush:
 		git add -A && \
 		git commit -m "Evaluation results" && \
 		git push
+
 
 cleanData:
 	-rm -r $(DATA_DIR)/*
