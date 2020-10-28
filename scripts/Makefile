@@ -1,5 +1,6 @@
 .PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportR reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
 
+
 # Configuration (using environment variables or arguments passed to make)
 DATA_DIR?=~/jsglr2evaluation-data
 REPORTS_DIR?=$(DATA_DIR)/reports
@@ -15,11 +16,13 @@ export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
 export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
 export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
 
+
 all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reports publish
 
 clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports cleanArchive
 
 cleanAll: clean all
+
 
 # Pull Spoofax languages from GitHub and build them
 languages:
