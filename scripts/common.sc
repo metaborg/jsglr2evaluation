@@ -1,15 +1,14 @@
-import $ivy.`com.lihaoyi::ammonite-ops:1.8.1`
+import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 import $ivy.`io.circe::circe-generic-extras:0.13.0`
 import $ivy.`io.circe::circe-yaml:0.11.0-M1`
 
-import ammonite.ops._
 import cats.syntax.either._
 import io.circe._
 import io.circe.generic.extras.auto._
 import io.circe.generic.extras.Configuration
 import io.circe.yaml._
 import java.time.LocalDateTime
-import java.io.{InputStream, FileInputStream}
+import java.io.{FileInputStream, InputStream}
 
 // This allows default arguments in ADTs: https://stackoverflow.com/a/47644276
 implicit val customConfig: Configuration = Configuration.default.withDefaults
@@ -106,12 +105,12 @@ case class IncrementalSource(id: String, repo: String,
 case class ANTLRBenchmark(id: String, benchmark: String)
 
 case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, reportsDir: Path) {
-    def languagesDir    = dir / 'languages
-    def sourcesDir      = dir / 'sources
-    def measurementsDir = dir / 'measurements
-    def benchmarksDir   = dir / 'benchmarks
-    def resultsDir      = dir / 'results
-    def websiteDir      = dir / 'website
+    def languagesDir    = dir / "languages"
+    def sourcesDir      = dir / "sources"
+    def measurementsDir = dir / "measurements"
+    def benchmarksDir   = dir / "benchmarks"
+    def resultsDir      = dir / "results"
+    def websiteDir      = dir / "website"
 
     def scopes = Seq(
         if (languages.exists(_.sources.batch.nonEmpty)) Some("batch") else None,

@@ -1,4 +1,4 @@
-import $ivy.`com.lihaoyi::ammonite-ops:1.8.1`, ammonite.ops._
+import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 
 import $file.common, common._, Suite._
 import $file.spoofax, spoofax._
@@ -16,7 +16,7 @@ suite.languages.foreach { language =>
     val parsers = Parser.variants(language)
 
     timed("validate " + language.id) {
-        language.sourceFilesBatch().foreach { file =>
+        (language.sourceFilesBatch() ++ language.sourceFilesIncremental).foreach { file =>
             val input = read! file
             val filename = file relativeTo language.sourcesDir
 
@@ -77,6 +77,31 @@ suite.languages.foreach { language =>
                     true
                 }
         }
+
+        language.sources.incremental.foreach { source =>
+            println(s"  Checking incremental correctness for ${source.id}")
+            val sourceDir = language.sourcesDir / "incremental" / source.id
+            val versions = (ls! sourceDir).map(path => (path relativeTo sourceDir).toString.toInt).sorted
+            versions.foreach { version =>
+                val versionDir = sourceDir / version.toString
+                (ls! versionDir).foreach { file =>
+                    val previousFile = sourceDir / (version - 1).toString / (file relativeTo versionDir)
+                    if (exists! previousFile) {
+                        parsers.filter({
+                            case JSGLR2Parser(_, _, incremental) => incremental
+                            case _ => false
+                        }).asInstanceOf[Seq[JSGLR2Parser]].foreach { parser =>
+                            val batch = parser.parseMulti(read! file)(0)
+                            val incremental = parser.parseMulti(read! previousFile, read! file)(1)
+                            if (batch.toString() != incremental.toString()) {
+                                println("   AST of " + file + " differs between batch and incremental!")
+                                exit(1)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     val sizes =
@@ -84,7 +109,7 @@ suite.languages.foreach { language =>
             val sourceDir = language.sourcesDir / "batch" / source.id
             val files = ls! sourceDir |? (_.ext == language.extension)
             val sizes = files.map(_.size)
-            
+
             if (sizes.nonEmpty) {
                 write.over(language.sourcesDir / "batch" / source.id / "sizes.csv", sizes.mkString("\n") + "\n")            
                 %("Rscript", "sourceSizes.R", sourceDir, source.id)(pwd)

@@ -1,4 +1,4 @@
-import $ivy.`com.lihaoyi::ammonite-ops:1.8.1`, ammonite.ops._
+import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 
 import $file.common, common._, Suite._
 import $file.spoofax, spoofax._
@@ -60,18 +60,22 @@ suite.languages.foreach { language =>
     def benchmarkJSGLRIncremental(name: String, resultsPath: Path, sourcePath: Path, params: Map[String, String] = Map.empty) = {
         for (i <- -1 until (ls! sourcePath).length) {
             println(f"    iteration $i%3d: start @ ${java.time.LocalDateTime.now}")
-            benchmark(
-                name,
-                resultsPath / s"$i.csv",
-                Seq(
-                    s"language=${language.id}",
-                    s"extension=${language.extension}",
-                    s"parseTablePath=${language.parseTablePath}",
-                    s"sourcePath=${sourcePath}",
-                    s"iteration=${i}",
-                ),
-                params + ("i" -> s"$i")
-            )
+            if (i >= 0 && (ls! sourcePath / f"$i").isEmpty) {
+                println(f"      Skipped (no valid sources)")
+            } else {
+                benchmark(
+                    name,
+                    resultsPath / s"$i.csv",
+                    Seq(
+                        s"language=${language.id}",
+                        s"extension=${language.extension}",
+                        s"parseTablePath=${language.parseTablePath}",
+                        s"sourcePath=${sourcePath}",
+                        s"iteration=${i}",
+                    ),
+                    params + ("i" -> s"$i")
+                )
+            }
         }
     }
 

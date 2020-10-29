@@ -1,4 +1,4 @@
-import $ivy.`com.lihaoyi::ammonite-ops:1.8.1`, ammonite.ops._
+import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 
 import coursierapi.MavenRepository
 

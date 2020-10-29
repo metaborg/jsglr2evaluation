@@ -1,5 +1,12 @@
 .PHONY: all pull-spoofax-releng pull-jsglr2 build-spoofax build-jsglr2 build-jsglr2-benchmark build-jsglr2-measure evaluation
 
+
+# Configuration (using environment variables or arguments passed to make)
+SPOOFAX_VERSION?=master
+JSGLR_VERSION?=develop/jsglr2
+EVALUATION_TARGET?=all
+
+
 all: build-spoofax build-jsglr2-benchmark build-jsglr2-measure evaluation
 
 
@@ -14,6 +21,7 @@ pull-spoofax-releng:
 
 pull-jsglr2: pull-spoofax-releng
 	cd /jsglr2evaluation/data/spoofax/jsglr && git checkout $(JSGLR_VERSION) && git pull
+
 
 build-spoofax: pull-jsglr2
 	cd /jsglr2evaluation/data/spoofax && ./b build java
@@ -30,9 +38,6 @@ build-jsglr2-measure: pull-jsglr2
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.measure && mvn install
 
 
+# Note that DATA_DIR and SPOOFAX_DIR are set as environment variables in Dockerfile
 evaluation:
-	cd scripts && \
-	make \
-		DATA_DIR=/jsglr2evaluation/data \
-		SPOOFAX_DIR=/jsglr2evaluation/data/spoofax \
-		$(EVALUATION_TARGET)
+	cd scripts && make $(EVALUATION_TARGET)

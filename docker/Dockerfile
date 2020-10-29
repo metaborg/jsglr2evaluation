@@ -53,6 +53,9 @@ COPY docker/Makefile .
 ENV SPOOFAX_VERSION=master
 ENV JSGLR_VERSION=develop/jsglr2
 
+ENV DATA_DIR=/jsglr2evaluation/data
+ENV SPOOFAX_DIR=/jsglr2evaluation/data/spoofax
+
 ENV TARGET=all
 ENV EVALUATION_TARGET=all
 
