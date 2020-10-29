@@ -43,10 +43,11 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     def sourceFilesPerFileBenchmark(implicit suite: Suite): Seq[Path] = {
         val files = sourceFilesBatch() sortBy(-_.size)
         val trimPercentage: Float = 10F
-        val filesTrimmed = files.slice(
-            ((trimPercentage / 100F) * files.size).toInt,
-            (((100F - trimPercentage) / 100F) * files.size).toInt
-        )
+
+        val from = (trimPercentage / 100F) * files.size
+        val to = ((100F - trimPercentage) / 100F) * files.size
+
+        val filesTrimmed = files.slice(from.round, to.round)
 
         val fileCount = filesTrimmed.size
         val step = fileCount / suite.samples
