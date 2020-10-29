@@ -80,6 +80,7 @@ def persistDynamicParseTables =
         language.dynamicParseTableGeneration
     }.foreach { case (language, parseTable) =>
         val gitSpoofaxParseTable = language.parseTable.asInstanceOf[GitSpoofax]
+        val parseTableTerm = ParseTableIO.generateATerm(parseTable.asInstanceOf[ParseTable]);
 
-        ParseTableIO.persistObjectToFile(parseTable.asInstanceOf[ParseTable], new File(gitSpoofaxParseTable.binPath(language).toString))
+        ParseTableIO.outputToFile(parseTableTerm, new File(gitSpoofaxParseTable.termPath(language).toString))
     }

@@ -20,7 +20,7 @@ suite.languages.foreach { language =>
                 "-Dexec.args=\""+
                     s"language=${language.id} " +
                     s"extension=${language.extension} " +
-                    s"parseTablePath=${language.parseTablePath} " +
+                    s"parseTablePath=${language.parseTableTermPath} " +
                     s"sourcePath=${language.sourcesDir / "batch"} " +
                     s"type=multiple" +
                 "\"",

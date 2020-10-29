@@ -24,6 +24,7 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         case parseTable @ GitSpoofax(_, _, dynamic) if dynamic => parseTable.binPath(this)
         case _ => parseTable.termPath(this)
     }
+    def parseTableTermPath(implicit suite: Suite) = parseTable.termPath(this)
     def dynamicParseTableGeneration = parseTable match {
         case GitSpoofax(_, _, dynamic) => dynamic
         case _ => false

@@ -37,7 +37,7 @@ suite.languages.foreach { language =>
             Seq(
                 s"language=${language.id}",
                 s"extension=${language.extension}",
-                s"parseTablePath=${language.parseTablePath}",
+                s"parseTablePath=${language.parseTableTermPath}",
                 s"sourcePath=${sourcePath}",
                 s"type=${cardinality}"
             ),
@@ -69,7 +69,7 @@ suite.languages.foreach { language =>
                     Seq(
                         s"language=${language.id}",
                         s"extension=${language.extension}",
-                        s"parseTablePath=${language.parseTablePath}",
+                        s"parseTablePath=${language.parseTableTermPath}",
                         s"sourcePath=${sourcePath}",
                         s"iteration=${i}",
                     ),
