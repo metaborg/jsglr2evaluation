@@ -26,12 +26,12 @@ suite.languages.foreach { language =>
                         (parser.id, parser.parse(input))
                     }, 10 seconds)
                 } catch {
-                    case _: TimeoutException => (parser.id, ParseFailure(Some("timeout")))
+                    case _: TimeoutException => (parser.id, ParseFailure(Some("timeout"), Timeout))
                 }
             }
 
-            val failures: Seq[(String, Option[String])] = results.flatMap {
-                case (parser, ParseFailure(error)) => Some((parser, error))
+            val failures: Seq[(String, Option[String], ParseFailureReason)] = results.flatMap {
+                case (parser, ParseFailure(error, reason)) => Some((parser, error, reason))
                 case _ => None
             }
 
@@ -45,13 +45,30 @@ suite.languages.foreach { language =>
             val valid =
                 if (failures.nonEmpty) {
                     println("   Invalid: " + filename)
-                    failures.foreach { case (parser, error) =>
+                    failures.foreach { case (parser, error, _) =>
                         println("     " + parser + error.fold("")(" (" + _ + ")"))
+                    }
+
+                    val invalid = failures.exists(_._3 == Invalid)
+                    val ambiguous = failures.exists(_._3 == Ambiguous)
+                    
+                    if (invalid) {
+                        mkdir! sourcesDir / "invalid"
+                        mv.over(file, sourcesDir / "invalid" / filename.last)
+                    } else if (ambiguous) {
+                        mkdir! sourcesDir / "ambiguous"
+                        mv.over(file, sourcesDir / "ambiguous" / filename.last)
+                    } else {
+                        mkdir! sourcesDir / "timeout"
+                        mv.over(file, sourcesDir / "timeout" / filename.last)
                     }
 
                     false
                 } else if (!consistentASTs(successASTs)) {
                     println("   Inconsistent: " + filename)
+
+                    mkdir! sourcesDir / "inconsistent"
+                    mv.over(file, sourcesDir / "inconsistent" / filename.last)
 
                     false
                 } else {
@@ -59,11 +76,6 @@ suite.languages.foreach { language =>
 
                     true
                 }
-
-            if (!valid) {
-                mkdir! sourcesDir / "invalid"
-                mv.over(file, sourcesDir / "invalid" / filename.last)
-            }
         }
     }
 

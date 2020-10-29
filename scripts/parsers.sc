@@ -23,10 +23,10 @@ case class JSGLR2Parser(language: Language, jsglr2Preset: JSGLR2Variant.Preset) 
     def parse(input: String) = jsglr2.parseResult(input, null, null) match {
         case success: JSGLR2Success[IStrategoTerm] =>
             if (success.isAmbiguous)
-                ParseFailure(Some("ambiguous"))
+                ParseFailure(Some("ambiguous"), Ambiguous)
             else
                 ParseSuccess(Some(success.ast))
-        case failure: JSGLR2Failure[_] => ParseFailure(Some(failure.parseFailure.failureCause.toMessage.toString))
+        case failure: JSGLR2Failure[_] => ParseFailure(Some(failure.parseFailure.failureCause.toMessage.toString), Invalid)
     }
 }
 
@@ -35,7 +35,7 @@ case class JSGLR1Parser(language: Language) extends Parser {
     val jsglr1 = getJSGLR1(language)
     def parse(input: String) = Try(jsglr1.parse(input, null, null)) match {
         case Success(_) => ParseSuccess(None)
-        case Failure(_) => ParseFailure(None)
+        case Failure(_) => ParseFailure(None, Invalid)
     }
 }
 
@@ -63,7 +63,7 @@ case class ANTLRParser[ANTLR__Lexer <: ANTLR_Lexer, ANTLR__Parser <: ANTLR_Parse
 
             ParseSuccess(None)
         } catch {
-            case e: ParseCancellationException => ParseFailure(None)
+            case e: ParseCancellationException => ParseFailure(None, Invalid)
         }
     }
 }
@@ -75,9 +75,14 @@ trait ParseResult {
 case class ParseSuccess(ast: Option[IStrategoTerm]) extends ParseResult {
     def isValid = true
 }
-case class ParseFailure(error: Option[String]) extends ParseResult {
+case class ParseFailure(error: Option[String], reason: ParseFailureReason) extends ParseResult {
     def isValid = false
 }
+
+trait ParseFailureReason
+object Invalid extends ParseFailureReason
+object Ambiguous extends ParseFailureReason
+object Timeout extends ParseFailureReason
 
 object Parser {
     def variants(language: Language)(implicit suite: Suite): Seq[Parser] = Seq(
