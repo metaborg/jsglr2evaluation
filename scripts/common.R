@@ -13,9 +13,9 @@ if (Sys.getenv("JSGLR2EVALUATION_DATA_DIR") != "" && Sys.getenv("JSGLR2EVALUATIO
 savePlot <- function(plot, filename) {
   png(file=paste(filename, ".png", sep=""))
   plot()
-  dev.off()
+  invisible(dev.off())
   
   pdf(file=paste(filename, ".pdf", sep=""))
   plot()
-  dev.off()
+  invisible(dev.off())
 }
