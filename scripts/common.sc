@@ -52,7 +52,10 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         val fileCount = filesTrimmed.size
         val step = fileCount / suite.samples
 
-        for (i <- 0 until suite.samples) yield filesTrimmed(i * step)
+        if (fileCount > 0)
+            for (i <- 0 until suite.samples) yield filesTrimmed(i * step)
+        else
+            Nil
     }
 }
 
