@@ -88,15 +88,48 @@ cp.over(pwd / "website-style.css", dir / "style.css")
 cp.over(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
 cp.over(reportsDir, dir / "reports")
 
+suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
+    mkdir! dir / "reports" / "batch" / language.id
+
+    if (exists! language.sourcesDir / "batch" / "sizes.png")
+        cp.over(language.sourcesDir / "batch" / "sizes.png", dir / "reports" / "batch" / language.id / "sizes.png")
+
+    language.sourcesBatchNonEmpty.map { source =>
+        mkdir! dir / "reports" / "batch" / language.id / source.id
+
+        if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
+            cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "reports" / "batch" / language.id / source.id / "sizes.png")
+    }
+}
+
 val config = removeCommentedLines(read! suite.configPath).trim
 
-val batchPlots = Seq("benchmarks-batch-throughput.png", "benchmarks-perFile-throughput.png")
+def batchContent = {
+ s"""
+    |<p><img src="./reports/batch/throughput.png" /></p>
+    |<h2>Per Language</h2>
+    |${withNav(suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
+        def content(source: Option[BatchSource]) =
+            s"""
+            |<div class="row">
+            |   <div class="col-sm">
+            |       <img src="./reports/batch/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p>
+            |   </div>
+            |   <div class="col-sm">
+            |       <img src="./reports/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p>
+            |   </div>
+            |</div>
+            |""".stripMargin
 
-val batchContent =
-    (if (batchPlots.forall(plot => exists! dir / "reports" / plot))
-        batchPlots.map(plot => s"""<p><img src="./reports/$plot" /></p>""").mkString("\n")
-    else
-        "")
+        (language.id, language.name, "<h3>Sources</h3>" + withNav(
+            (s"${language.id}-all", "All", content(None)) +:
+            language.sourcesBatchNonEmpty.map { source =>
+                (source.id, source.id, content(Some(source)))
+            }
+        ))
+    })}
+    |""".stripMargin
+}
 
 val incrementalContent = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     (language.id, language.name, withNav(language.sources.incremental.map { source => {

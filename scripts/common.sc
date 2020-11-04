@@ -35,11 +35,18 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     def measurementsDir(implicit suite: Suite) = suite.measurementsDir / id
     def benchmarksDir(implicit suite: Suite) = suite.benchmarksDir / id
 
-    def sourceFilesBatch(source: Option[String] = None)(implicit suite: Suite) = ls.rec! (source match {
-        case Some(id) => sourcesDir / "batch" / id
+    def sourceFilesBatch(source: Option[BatchSource] = None)(implicit suite: Suite) = ls.rec! (source match {
+        case Some(source) => sourcesDir / "batch" / source.id
         case None => sourcesDir / "batch"
     }) |? (_.ext == extension)
+
+    def sourcesBatchNonEmpty(implicit suite: Suite) =
+        sources.batch.filter { source =>
+            sourceFilesBatch(Some(source)).nonEmpty
+        }
+
     def sourceFilesIncremental(implicit suite: Suite) = ls.rec! sourcesDir / "incremental" |? (_.ext == extension)
+    
     def sourceFilesPerFileBenchmark(implicit suite: Suite): Seq[Path] = {
         val files = sourceFilesBatch() sortBy(-_.size)
         val trimPercentage: Float = 10F
