@@ -10,9 +10,7 @@ mkdir! Suite.measurementsDir
 suite.languages.foreach { language =>
     println(" " + language.name)
 
-    if (language.sources.batch.isEmpty)
-        println("  Skipped, because there are no batch sources")
-    else
+    if (language.sourcesBatchNonEmpty.nonEmpty)
         timed("measure " + language.id) {
             %%(
                 "mvn",

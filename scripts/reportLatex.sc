@@ -24,16 +24,16 @@ def latexTableTestSets(implicit suite: Suite) = {
     s.append("\\hline\n")
 
     suite.languages.foreach { language =>
-        s.append("\\multirow{" + language.sources.batch.size + "}{*}{" + language.name + "}\n")
+        s.append("\\multirow{" + language.sourcesBatchNonEmpty + "}{*}{" + language.name + "}\n")
 
-        language.sources.batch.zipWithIndex.foreach { case (source, index) =>
+        language.sourcesBatchNonEmpty.zipWithIndex.foreach { case (source, index) =>
             val files = language.sourceFilesBatch(Some(source))
             val lines = files | read.lines | (_.size) sum
             val size = files | stat | (_.size) sum
 
             s.append("  & " + source.id + " & " + files.size + " & " + lines + " & " + size + " \\\\ ")
 
-            if (index == language.sources.batch.size - 1)
+            if (index == language.sourcesBatchNonEmpty.size - 1)
                 s.append("\\hline\n");
             else
                 s.append("\\cline{2-5}\n")

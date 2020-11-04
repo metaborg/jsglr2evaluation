@@ -18,7 +18,7 @@ println("Processing results...")
 
 mkdir! resultsDir
 
-val languagesWithBatchSources = suite.languages.filter(_.sources.batch.nonEmpty)
+val languagesWithBatchSources = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty)
 if (languagesWithBatchSources.nonEmpty) {
     val dir = languagesWithBatchSources(0).measurementsDir
 
@@ -36,7 +36,7 @@ if (languagesWithBatchSources.nonEmpty) {
 suite.languages.foreach { language =>
     println(" " + language.name)
 
-    if (language.sources.batch.nonEmpty) {
+    if (language.sourcesBatchNonEmpty.nonEmpty) {
 
         // Measurements
 

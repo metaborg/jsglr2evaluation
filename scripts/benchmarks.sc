@@ -79,7 +79,7 @@ suite.languages.foreach { language =>
         }
     }
 
-    if (language.sources.batch.nonEmpty) {
+    if (language.sourcesBatchNonEmpty.nonEmpty) {
 
         timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id) {
             benchmarkJSGLR("JSGLR2BenchmarkExternal", language.benchmarksDir / "jsglr2.csv", language.sourcesDir / "batch", "multiple", Map("implode" -> "true"))
