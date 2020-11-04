@@ -109,7 +109,7 @@ case class IncrementalSource(id: String, repo: String,
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 
-case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, reportsDir: Path) {
+case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, reportsDir: Path, dev: Boolean) {
     def languagesDir    = dir / "languages"
     def sourcesDir      = dir / "sources"
     def measurementsDir = dir / "measurements"
@@ -129,6 +129,7 @@ object Suite {
         val dir        = sys.env.get("JSGLR2EVALUATION_DATA_DIR").map(getPath).getOrElse(throw new IllegalArgumentException("missing 'JSGLR2EVALUATION_DATA_DIR' environment variable"))
         val spoofaxDir = sys.env.get("JSGLR2EVALUATION_SPOOFAX_DIR").map(getPath).getOrElse(pwd / up / up / up)
         val reportsDir = sys.env.get("JSGLR2EVALUATION_REPORTS_DIR").map(getPath).getOrElse(dir / "reports")
+        val dev        = sys.env.get("JSGLR2EVALUATION_DEV").map(_.toBoolean).getOrElse(false)
 
         val configPath = {
             val filename = RelPath(sys.env.get("CONFIG").getOrElse("config.yml"))
@@ -141,7 +142,7 @@ object Suite {
         val configJson = parser.parse(read! configPath)
         val config = configJson.flatMap(_.as[Config]).valueOr(throw _)
 
-        Suite(configPath, config.languages, dir, config.iterations, config.samples, config.shrinkBatchSources, spoofaxDir, reportsDir)
+        Suite(configPath, config.languages, dir, config.iterations, config.samples, config.shrinkBatchSources, spoofaxDir, reportsDir, dev)
     }
 
     implicit def languagesDir    = suite.languagesDir
@@ -151,6 +152,7 @@ object Suite {
     implicit def resultsDir      = suite.resultsDir
     implicit def reportsDir      = suite.reportsDir
     implicit def websiteDir      = suite.websiteDir
+    implicit def dev             = suite.dev
     
     implicit def inScope(scope: String) = suite.scopes.contains(scope)
     

@@ -5,6 +5,7 @@
 DATA_DIR?=~/jsglr2evaluation-data
 REPORTS_DIR?=$(DATA_DIR)/reports
 SPOOFAX_DIR?=~/spoofax/releng
+DEV?=false
 
 # Shorthands
 JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
@@ -15,6 +16,7 @@ BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsgl
 export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
 export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
 export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
+export JSGLR2EVALUATION_DEV=$(DEV)
 
 
 all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reports publish
@@ -114,6 +116,9 @@ websiteRepo:
 
 addToWebsite:
 	amm addToWebsite.sc
+
+addToWebsiteWatch:
+	amm -w addToWebsite.sc
 
 websitePush:
 	cd $(DATA_DIR)/website && \

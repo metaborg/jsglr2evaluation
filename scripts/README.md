@@ -34,3 +34,9 @@ Specify path to generate reports (LaTeX tables and plots with R) to with `REPORT
 ```
 make REPORTS_DIR=~/path/to/paper/generated all
 ```
+
+During development, automatically regenerate the website at path `/dev` when `addToWebsite.sc` changes:
+
+```
+make DEV=true addToWebsiteWatch
+```

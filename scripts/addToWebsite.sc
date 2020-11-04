@@ -59,31 +59,34 @@ def withTemplate(title: String, config: String, content: String) =
 
 def removeCommentedLines(text: String) = text.replaceAll("[ \t\r]*\n[ \t]*#[^\n]+", "")
 
-val id = ZonedDateTime.now(ZoneId.of("Europe/Amsterdam")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+val id = if (dev) "dev" else ZonedDateTime.now(ZoneId.of("Europe/Amsterdam")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
 
 val dir = websiteDir / id
-val indexFile = websiteDir / "index.html"
 
-val index = Jsoup.parse(new File(indexFile.toString), "UTF-8")
-val ul = index.select("#runs").first
+if (!dev) {
+    val indexFile = websiteDir / "index.html"
 
-val badges = suite.scopes.map(scope => s"""<span class="badge badge-primary badge-pill">$scope</span>""").mkString("\n")
-ul.prepend(
-    s"""|<a href="./$id/index.html" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-        |  $id
-        |  <span>
-        |    ${indent(4, badges)}
-        |  </span>
-        |</a>
-        |""".stripMargin)
+    val index = Jsoup.parse(new File(indexFile.toString), "UTF-8")
+    val ul = index.select("#runs").first
 
-write.over(indexFile, index.toString + "\n")
+    val badges = suite.scopes.map(scope => s"""<span class="badge badge-primary badge-pill">$scope</span>""").mkString("\n")
+    ul.prepend(
+        s"""|<a href="./$id/index.html" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            |  $id
+            |  <span>
+            |    ${indent(4, badges)}
+            |  </span>
+            |</a>
+            |""".stripMargin)
+
+    write.over(indexFile, index.toString + "\n")
+}
 
 mkdir! dir
 
-cp(pwd / "website-style.css", dir / "style.css")
-cp(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
-cp.into(reportsDir, dir)
+cp.over(pwd / "website-style.css", dir / "style.css")
+cp.over(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
+cp.over(reportsDir, dir / "reports")
 
 val config = removeCommentedLines(read! suite.configPath).trim
 
@@ -111,7 +114,7 @@ val tabs = Seq(
     ("incremental", "Incremental", if (incrementalContent.nonEmpty) withNav(incrementalContent) else "")
 )
 
-write(
+write.over(
     dir / "index.html",
     withTemplate(id, config,
         s"""|<p><strong>Iterations:</strong> ${suite.iterations}</p>
