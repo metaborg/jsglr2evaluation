@@ -1,9 +1,9 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportBatch reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing figures latexTables batchPlots incrementalPlots cleanFigures publish archive cleanArchive websiteRepo addToWebsite websitePush
 
 
 # Configuration (using environment variables or arguments passed to make)
 DATA_DIR?=~/jsglr2evaluation-data
-REPORTS_DIR?=$(DATA_DIR)/reports
+FIGURES_DIR?=$(DATA_DIR)/figures
 SPOOFAX_DIR?=~/spoofax/releng
 DEV?=false
 
@@ -15,13 +15,13 @@ BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsgl
 # Environment variables passed to the Ammonite/Python/R scripts
 export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
 export JSGLR2EVALUATION_SPOOFAX_DIR=$(SPOOFAX_DIR)
-export JSGLR2EVALUATION_REPORTS_DIR=$(REPORTS_DIR)
+export JSGLR2EVALUATION_FIGURES_DIR=$(FIGURES_DIR)
 export JSGLR2EVALUATION_DEV=$(DEV)
 
 
-all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing reports publish
+all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing figures publish
 
-clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanReports cleanArchive
+clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanFigures cleanArchive
 
 cleanAll: clean all
 
@@ -79,33 +79,33 @@ cleanPostProcessing:
 	-rm -r $(DATA_DIR)/results
 
 
-reports: reportLatex reportBatch .venv reportPy
+figures: latexTables batchPlots .venv incrementalPlots
 
-# Reporting in Latex tables (batch)
-reportLatex:
-	amm reportLatex.sc
+# Generate LaTeX tables (batch)
+latexTables:
+	amm latexTables.sc
 
-# Reporting in plots (batch)
-reportBatch:
-	amm reportBatch.sc
+# Generate plots (batch)
+batchPlots:
+	amm batchPlots.sc
 
 .venv:
 	./setup-venv.sh
 
-# Reporting in plots (incremental)
+# Generate plots (incremental)
 # Cannot activate venv using `source` in Makefile, so directly calling Python instead: https://stackoverflow.com/a/57257640
-reportPy:
-	.venv/bin/python report.py
+incrementalPlots:
+	.venv/bin/python incrementalPlots.py
 
-cleanReports:
-	-rm -r $(REPORTS_DIR)
+cleanFigures:
+	-rm -r $(FIGURES_DIR)
 
 
-# Archive and publish reports to website
+# Archive and publish figures to website
 publish: cleanArchive archive websiteRepo addToWebsite websitePush
 
 archive:
-	cd $(DATA_DIR) && tar -czf archive.tar.gz measurements benchmarks results -C $(REPORTS_DIR)/.. reports
+	cd $(DATA_DIR) && tar -czf archive.tar.gz measurements benchmarks results -C $(FIGURES_DIR)/.. figures
 
 cleanArchive:
 	-rm $(DATA_DIR)/archive.tar.gz

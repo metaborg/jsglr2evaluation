@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pdftools
 
 DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
-REPORTS_DIR = environ["JSGLR2EVALUATION_REPORTS_DIR"]
+FIGURES_DIR = environ["JSGLR2EVALUATION_FIGURES_DIR"]
 
 COLORS = {
     "Batch": "rs",
@@ -103,10 +103,10 @@ def main():
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
-                report_path = path.join(REPORTS_DIR, "incremental", language.name, csv_basename)
+                report_path = path.join(FIGURES_DIR, "incremental", language.name, csv_basename)
                 makedirs(report_path, exist_ok=True)
 
-                reports = [
+                figures = [
                     (plot_times(result_data, ["Batch", "Incremental", "IncrementalNoCache"]), "report"),
                     (plot_times(result_data_except_first, ["Incremental"]), "report-except-first"),
                     (plot_times_vs_changes(result_data_except_first, "bytes", "Added", "Removed"),
@@ -115,7 +115,7 @@ def main():
                     (plot_times_vs_changes_3d(result_data_except_first), "report-time-vs-changes-3D"),
                 ]
 
-                for fig, name in reports:
+                for fig, name in figures:
                     fig.savefig(path.join(report_path, name + ".pdf"))
                     fig.savefig(path.join(report_path, name + ".svg"))
 
@@ -124,7 +124,7 @@ def main():
                 merged_path = path.join(report_path, "merged.pdf")
                 if path.exists(merged_path):
                     remove(merged_path)
-                pdftools.pdf_merge([path.join(report_path, name + ".pdf") for _, name in reports], merged_path)
+                pdftools.pdf_merge([path.join(report_path, name + ".pdf") for _, name in figures], merged_path)
 
 
 if __name__ == '__main__':

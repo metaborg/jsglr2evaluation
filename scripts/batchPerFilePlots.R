@@ -21,9 +21,9 @@ perFileBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
 }
 
 resultsDir <- args[1]
-reportsDir <- args[2]
+figuresDir <- args[2]
 
-dir.create(reportsDir, showWarnings = FALSE, recursive = TRUE)
+dir.create(figuresDir, showWarnings = FALSE, recursive = TRUE)
 
-perFileBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),       paste(reportsDir, "time", sep="/"),       "time",       "ms")
-perFileBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(reportsDir, "throughput", sep="/"), "throughput", "1000 chars/s")
+perFileBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),       paste(figuresDir, "time", sep="/"),       "time",       "ms")
+perFileBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(figuresDir, "throughput", sep="/"), "throughput", "1000 chars/s")

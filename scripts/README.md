@@ -29,10 +29,10 @@ Specify working directory for languages, sources, measurements, results, etc., w
 make DATA_DIR=~/jsglr2evaluation-data all
 ```
 
-Specify path to generate reports (LaTeX tables and plots with R) to with `REPORTS_DIR` (defaults to `~/jsglr2evaluation-data/reports`):
+Specify path to generate figures (LaTeX tables and plots) to with `FIGURES_DIR` (defaults to `~/jsglr2evaluation-data/figures`):
 
 ```
-make REPORTS_DIR=~/path/to/paper/generated all
+make FIGURES_DIR=~/path/to/paper/generated all
 ```
 
 During development, automatically regenerate the website at path `/dev` when `addToWebsite.sc` changes:

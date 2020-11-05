@@ -41,9 +41,9 @@ batchThroughputBenchmarksPlot <- function(inputFile, outputFile, dimension, unit
 }
 
 resultsDir <- args[1]
-reportsDir <- args[2]
+figuresDir <- args[2]
 
-dir.create(reportsDir, showWarnings = FALSE, recursive = TRUE)
+dir.create(figuresDir, showWarnings = FALSE, recursive = TRUE)
 
-batchTimeBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),             paste(reportsDir, "time", sep="/"))
-batchThroughputBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(reportsDir, "throughput", sep="/"))
+batchTimeBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),             paste(figuresDir, "time", sep="/"))
+batchThroughputBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(figuresDir, "throughput", sep="/"))

@@ -2,12 +2,12 @@ options(warn=1)
 
 args = commandArgs(trailingOnly=TRUE)
 
-if (Sys.getenv("JSGLR2EVALUATION_DATA_DIR") != "" && Sys.getenv("JSGLR2EVALUATION_REPORTS_DIR") != "") {
+if (Sys.getenv("JSGLR2EVALUATION_DATA_DIR") != "" && Sys.getenv("JSGLR2EVALUATION_FIGURES_DIR") != "") {
   dataDir    <- Sys.getenv("JSGLR2EVALUATION_DATA_DIR")
-  reportsDir <- Sys.getenv("JSGLR2EVALUATION_REPORTS_DIR")
+  figuresDir <- Sys.getenv("JSGLR2EVALUATION_FIGURES_DIR")
 } else {
   dataDir    <- "~/jsglr2evaluation-data"
-  reportsDir <- "~/jsglr2evaluation-data/reports"
+  figuresDir <- "~/jsglr2evaluation-data/figures"
 }
 
 savePlot <- function(plot, filename) {

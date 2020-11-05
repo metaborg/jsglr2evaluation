@@ -86,19 +86,19 @@ mkdir! dir
 
 cp.over(pwd / "website-style.css", dir / "style.css")
 cp.over(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
-cp.over(reportsDir, dir / "reports")
+cp.over(figuresDir, dir / "figures")
 
 suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
-    mkdir! dir / "reports" / "batch" / language.id
+    mkdir! dir / "figures" / "batch" / language.id
 
     if (exists! language.sourcesDir / "batch" / "sizes.png")
-        cp.over(language.sourcesDir / "batch" / "sizes.png", dir / "reports" / "batch" / language.id / "sizes.png")
+        cp.over(language.sourcesDir / "batch" / "sizes.png", dir / "figures" / "batch" / language.id / "sizes.png")
 
     language.sourcesBatchNonEmpty.map { source =>
-        mkdir! dir / "reports" / "batch" / language.id / source.id
+        mkdir! dir / "figures" / "batch" / language.id / source.id
 
         if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
-            cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "reports" / "batch" / language.id / source.id / "sizes.png")
+            cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "figures" / "batch" / language.id / source.id / "sizes.png")
     }
 }
 
@@ -107,10 +107,10 @@ val config = removeCommentedLines(read! suite.configPath).trim
 def batchSourceTabContent(languageId: String, source: Option[BatchSource]) =
     s"""|<div class="row">
         |   <div class="col-sm">
-        |       <img src="./reports/batch/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
+        |       <img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
         |   </div>
         |   <div class="col-sm">
-        |       <img src="./reports/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p>
+        |       <img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p>
         |   </div>
         |</div>""".stripMargin
 
@@ -129,15 +129,15 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name?
         (source.id, source.id, plots.map { plot =>
-            s"""<p><img src="./reports/incremental/${language.id}/${source.id}-parse/$plot.svg" /></p>"""
+            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse/$plot.svg" /></p>"""
         }.mkString("\n"))
     }}))
 }
 
 val tabs = Seq(
     ("batch", "Batch",
-        if (exists! dir / "reports" / "batch" / "throughput.png" && batchTabs.nonEmpty)
-            s"""|<p><img src="./reports/batch/throughput.png" /></p>
+        if (exists! dir / "figures" / "batch" / "throughput.png" && batchTabs.nonEmpty)
+            s"""|<p><img src="./figures/batch/throughput.png" /></p>
                 |<h2>Per Language</h2>
                 |${withNav(batchTabs)}""".stripMargin
         else ""),

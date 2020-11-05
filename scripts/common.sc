@@ -116,7 +116,7 @@ case class IncrementalSource(id: String, repo: String,
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 
-case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, reportsDir: Path, dev: Boolean) {
+case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir    = dir / "languages"
     def sourcesDir      = dir / "sources"
     def measurementsDir = dir / "measurements"
@@ -135,7 +135,7 @@ object Suite {
     implicit val suite = {
         val dir        = sys.env.get("JSGLR2EVALUATION_DATA_DIR").map(getPath).getOrElse(throw new IllegalArgumentException("missing 'JSGLR2EVALUATION_DATA_DIR' environment variable"))
         val spoofaxDir = sys.env.get("JSGLR2EVALUATION_SPOOFAX_DIR").map(getPath).getOrElse(pwd / up / up / up)
-        val reportsDir = sys.env.get("JSGLR2EVALUATION_REPORTS_DIR").map(getPath).getOrElse(dir / "reports")
+        val figuresDir = sys.env.get("JSGLR2EVALUATION_FIGURES_DIR").map(getPath).getOrElse(dir / "figures")
         val dev        = sys.env.get("JSGLR2EVALUATION_DEV").map(_.toBoolean).getOrElse(false)
 
         val configPath = {
@@ -149,7 +149,7 @@ object Suite {
         val configJson = parser.parse(read! configPath)
         val config = configJson.flatMap(_.as[Config]).valueOr(throw _)
 
-        Suite(configPath, config.languages, dir, config.iterations, config.samples, config.shrinkBatchSources, spoofaxDir, reportsDir, dev)
+        Suite(configPath, config.languages, dir, config.iterations, config.samples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
     }
 
     implicit def languagesDir    = suite.languagesDir
@@ -157,7 +157,7 @@ object Suite {
     implicit def measurementsDir = suite.measurementsDir
     implicit def benchmarksDir   = suite.benchmarksDir
     implicit def resultsDir      = suite.resultsDir
-    implicit def reportsDir      = suite.reportsDir
+    implicit def figuresDir      = suite.figuresDir
     implicit def websiteDir      = suite.websiteDir
     implicit def dev             = suite.dev
     
