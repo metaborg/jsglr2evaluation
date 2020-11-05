@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportR reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing reports reportLatex reportBatch reportPy cleanReports publish archive cleanArchive websiteRepo addToWebsite websitePush
 
 
 # Configuration (using environment variables or arguments passed to make)
@@ -79,15 +79,15 @@ cleanPostProcessing:
 	-rm -r $(DATA_DIR)/results
 
 
-reports: reportLatex reportR .venv reportPy
+reports: reportLatex reportBatch .venv reportPy
 
 # Reporting in Latex tables (batch)
 reportLatex:
 	amm reportLatex.sc
 
 # Reporting in plots (batch)
-reportR:
-	Rscript report.R
+reportBatch:
+	amm reportBatch.sc
 
 .venv:
 	./setup-venv.sh
