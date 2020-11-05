@@ -60,7 +60,7 @@ cleanMeasurements:
 
 
 # Performs benchmarks
-benchmarks:
+benchmarks: $(BENCHMARKS_JAR)
 	amm benchmarks.sc
 
 $(BENCHMARKS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
@@ -121,6 +121,7 @@ addToWebsiteWatch:
 	amm -w addToWebsite.sc
 
 websitePush:
+	-[ "$(DEV)" == "false" ] && \
 	cd $(DATA_DIR)/website && \
 		git add -A && \
 		git commit -m "Evaluation results" && \
