@@ -112,7 +112,7 @@ cleanArchive:
 
 websiteRepo:
 	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi
-	cd $(DATA_DIR)/website && git pull
+	cd $(DATA_DIR)/website && git pull --rebase
 
 addToWebsite:
 	amm addToWebsite.sc

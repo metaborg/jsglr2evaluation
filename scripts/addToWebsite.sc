@@ -51,8 +51,8 @@ def withTemplate(title: String, config: String, content: String) =
         |      </div>
         |    </div>
         |  </div>
-        |<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-        |<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+        |  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        |  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
         |</body>
         |</html>
         |""".stripMargin
@@ -104,34 +104,27 @@ suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
 
 val config = removeCommentedLines(read! suite.configPath).trim
 
-def batchContent = {
- s"""
-    |<p><img src="./reports/batch/throughput.png" /></p>
-    |<h2>Per Language</h2>
-    |${withNav(suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
-        def content(source: Option[BatchSource]) =
-            s"""
-            |<div class="row">
-            |   <div class="col-sm">
-            |       <img src="./reports/batch/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p>
-            |   </div>
-            |   <div class="col-sm">
-            |       <img src="./reports/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p>
-            |   </div>
-            |</div>
-            |""".stripMargin
+def batchSourceTabContent(languageId: String, source: Option[BatchSource]) =
+    s"""|<div class="row">
+        |   <div class="col-sm">
+        |       <img src="./reports/batch/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
+        |   </div>
+        |   <div class="col-sm">
+        |       <img src="./reports/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p>
+        |   </div>
+        |</div>""".stripMargin
 
-        (language.id, language.name, "<h3>Sources</h3>" + withNav(
-            (s"${language.id}-all", "All", content(None)) +:
-            language.sourcesBatchNonEmpty.map { source =>
-                (source.id, source.id, content(Some(source)))
-            }
-        ))
-    })}
-    |""".stripMargin
+def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
+    (language.id, language.name, "<h3>Sources</h3>\n" + withNav(
+        (s"${language.id}-all", "All", batchSourceTabContent(language.id, None)) +:
+        language.sourcesBatchNonEmpty.map { source =>
+            // TODO add field source.name?
+            (source.id, source.id, batchSourceTabContent(language.id, Some(source)))
+        }
+    ))
 }
 
-val incrementalContent = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
+val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     (language.id, language.name, withNav(language.sources.incremental.map { source => {
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name?
@@ -142,15 +135,20 @@ val incrementalContent = suite.languages.filter(_.sources.incremental.nonEmpty).
 }
 
 val tabs = Seq(
-    ("batch", "Batch", batchContent),
+    ("batch", "Batch",
+        if (exists! dir / "reports" / "batch" / "throughput.png" && batchTabs.nonEmpty)
+            s"""|<p><img src="./reports/batch/throughput.png" /></p>
+                |<h2>Per Language</h2>
+                |${withNav(batchTabs)}""".stripMargin
+        else ""),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (incrementalContent.nonEmpty) withNav(incrementalContent) else "")
+    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else "")
 )
 
 write.over(
     dir / "index.html",
     withTemplate(id, config,
         s"""|<p><strong>Iterations:</strong> ${suite.iterations}</p>
-            |${indent(4, withNav(tabs))}""".stripMargin
+            |${withNav(tabs)}""".stripMargin
     )
 )
