@@ -166,10 +166,8 @@ object Suite {
     implicit def parseTableMeasurementsPath = resultsDir / "measurements-parsetable.csv"
     implicit def parsingMeasurementsPath    = resultsDir / "measurements-parsing.csv"
 
-    implicit def batchBenchmarksPath             = resultsDir / "benchmarks-batch-time.csv"
-    implicit def batchBenchmarksNormalizedPath   = resultsDir / "benchmarks-batch-throughput.csv"
-    implicit def perFileBenchmarksPath           = resultsDir / "benchmarks-perFile-time.csv"
-    implicit def perFileBenchmarksNormalizedPath = resultsDir / "benchmarks-perFile-throughput.csv"
+    implicit def batchResultsDir       = resultsDir / "batch"
+    implicit def perFileResultsDir     = resultsDir / "perFile"
 
     implicit def incrementalResultsDir = resultsDir / "incremental"
 

@@ -10,8 +10,19 @@ mkdir! Suite.measurementsDir
 suite.languages.foreach { language =>
     println(" " + language.name)
 
-    if (language.sourcesBatchNonEmpty.nonEmpty)
-        timed("measure " + language.id) {
+    def batchMeasurements(source: Option[BatchSource]) = {
+        val (sourcesDir, reportDir) = source match {
+                case None => (
+                    language.sourcesDir / "batch",
+                    language.measurementsDir / "batch"
+                )
+                case Some(source) => (
+                    language.sourcesDir / "batch" / source.id,
+                    language.measurementsDir / "batch" / source.id
+                )
+            }
+
+        timed("measure " + language.id + source.fold("")("/" + _.id)) {
             %%(
                 "mvn",
                 "exec:java",
@@ -19,11 +30,20 @@ suite.languages.foreach { language =>
                     s"language=${language.id} " +
                     s"extension=${language.extension} " +
                     s"parseTablePath=${language.parseTableTermPath} " +
-                    s"sourcePath=${language.sourcesDir / "batch"} " +
+                    s"sourcePath=$sourcesDir " +
                     s"type=multiple" +
                 "\"",
-                "-DreportPath=" + language.measurementsDir,
+                "-DreportPath=" + reportDir,
                 MAVEN_OPTS="-Xmx8G -Xss64M"
             )(suite.spoofaxDir / "jsglr" / "org.spoofax.jsglr2.measure")
         }
+    }
+
+    if (language.sourcesBatchNonEmpty.nonEmpty) {
+        batchMeasurements(None)
+
+        language.sourcesBatchNonEmpty.map { source =>
+            batchMeasurements(Some(source))
+        }
+    }
 }

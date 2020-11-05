@@ -23,15 +23,38 @@ if (languagesWithBatchSources.nonEmpty) {
     val dir = languagesWithBatchSources(0).measurementsDir
 
     // Copy header from measurements CSV
-    write.over(parseTableMeasurementsPath, "language," + read.lines(dir / "parsetable.csv")(0))
-    write.over(parsingMeasurementsPath,    "language," + read.lines(dir / "parsing.csv")(0))
+    write.over(parseTableMeasurementsPath, "language," + read.lines(dir / "batch" / "parsetable.csv")(0))
+    write.over(parsingMeasurementsPath,    "language," + read.lines(dir / "batch" / "parsing.csv")(0))
 
-    // Add header to benchmarks CSV
-    write.over(batchBenchmarksPath,             "language,variant,score,error,low,high\n")
-    write.over(batchBenchmarksNormalizedPath,   "language,variant,score,low,high\n")
-    write.over(perFileBenchmarksPath,           "language,variant,score,error,low,high,size\n")
-    write.over(perFileBenchmarksNormalizedPath, "language,variant,score,low,high,size\n")
+    // Setup header for benchmarks CSV
+    mkdir! batchResultsDir
+    write.over(batchResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+    write.over(batchResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+
+    suite.languages.foreach { language =>
+        val languageResultsDir = batchResultsDir / language.id
+
+        mkdir! languageResultsDir
+
+        write.over(languageResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+        write.over(languageResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+        
+        language.sourcesBatchNonEmpty.foreach { source =>
+            val sourceResultsDir = batchResultsDir / language.id / source.id
+
+            mkdir! sourceResultsDir
+
+            write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+            write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+        }
+    }
+
+    mkdir! perFileResultsDir
+    write.over(perFileResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
+    write.over(perFileResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
 }
+
+// Normalization: chars / ms == 1000 chars / s
 
 suite.languages.foreach { language =>
     println(" " + language.name)
@@ -40,15 +63,10 @@ suite.languages.foreach { language =>
 
         // Measurements
 
-        write.append(parseTableMeasurementsPath, "\n" + language.id + "," + read.lines(language.measurementsDir / "parsetable.csv")(1))
-        write.append(parsingMeasurementsPath, "\n" + language.id + "," + read.lines(language.measurementsDir / "parsing.csv")(1))
+        write.append(parseTableMeasurementsPath, "\n" + language.id + "," + read.lines(language.measurementsDir / "batch" / "parsetable.csv")(1))
+        write.append(parsingMeasurementsPath, "\n" + language.id + "," + read.lines(language.measurementsDir / "batch" / "parsing.csv")(1))
 
         // Benchmarks (batch)
-
-        // Normalization: chars / ms == 1000 chars / s
-        val characters = BigDecimal(CSV.parse(language.measurementsDir / "parsing.csv").rows.head("characters"))
-        val normalizeBatch: BigDecimal => BigDecimal = score => characters / score
-
         def processBenchmarkCSV(benchmarkCSV: CSV, variant: CSVRow => String, destinationPath: Path, destinationPathNormalized: Path, normalize: BigDecimal => BigDecimal, append: String = "") = {
             benchmarkCSV.rows.foreach { row =>
                 val rawScore = row("Score")
@@ -62,20 +80,46 @@ suite.languages.foreach { language =>
             }
         }
 
-        processBenchmarkCSV(CSV.parse(language.benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), batchBenchmarksPath, batchBenchmarksNormalizedPath, normalizeBatch)
-        processBenchmarkCSV(CSV.parse(language.benchmarksDir / "jsglr1.csv"), _ => "jsglr1", batchBenchmarksPath, batchBenchmarksNormalizedPath, normalizeBatch)
+        def batchBenchmarks(source: Option[BatchSource]) = {
+            val (measurementsDir, benchmarksDir, resultsDirs) = source match {
+                case None => (
+                    language.measurementsDir / "batch",
+                    language.benchmarksDir / "batch",
+                    Seq(batchResultsDir, batchResultsDir / language.id)
+                )
+                case Some(source) => (
+                    language.measurementsDir / "batch" / source.id,
+                    language.benchmarksDir / "batch" / source.id,
+                    Seq(batchResultsDir / language.id / source.id)
+                )
+            }
 
-        language.antlrBenchmarks.foreach { antlrBenchmark =>
-            processBenchmarkCSV(CSV.parse(language.benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, batchBenchmarksPath, batchBenchmarksNormalizedPath, normalizeBatch)
+            val characters = BigDecimal(CSV.parse(measurementsDir / "parsing.csv").rows.head("characters"))
+            val normalize: BigDecimal => BigDecimal = score => characters / score
+
+            resultsDirs.foreach { resultsDir =>
+                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+
+                language.antlrBenchmarks.foreach { antlrBenchmark =>
+                    processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                }
+            }
+        }
+
+        batchBenchmarks(None)
+
+        language.sourcesBatchNonEmpty.foreach { source =>
+            batchBenchmarks(Some(source))
         }
 
         // Benchmarks (per file)
 
         language.sourceFilesPerFileBenchmark.foreach { file =>
             val characters = (read ! file).length
-            val normalizePerFile: BigDecimal => BigDecimal = score => characters / score
+            val normalize: BigDecimal => BigDecimal = score => characters / score
 
-            processBenchmarkCSV(CSV.parse(language.benchmarksDir / "perFile" / s"${file.last.toString}.csv"), row => row("Param: variant"), perFileBenchmarksPath, perFileBenchmarksNormalizedPath, normalizePerFile, "," + characters)
+            processBenchmarkCSV(CSV.parse(language.benchmarksDir / "perFile" / s"${file.last.toString}.csv"), row => row("Param: variant"), perFileResultsDir / "time.csv", perFileResultsDir / "throughput.csv", normalize, "," + characters)
         }
     }
 
