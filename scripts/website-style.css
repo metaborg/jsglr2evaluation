@@ -1,3 +1,6 @@
 body {
     padding-top: 1em;
 }
+img {
+    max-width: 100%;
+}
