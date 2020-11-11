@@ -1,3 +1,7 @@
+warmupIterations: 1
+benchmarkIterations: 1
+shrinkBatchSources: 3
+batchSamples: 1
 languages:
   - id: java
     name: Java

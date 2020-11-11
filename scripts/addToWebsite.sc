@@ -152,7 +152,7 @@ val tabs = Seq(
 write.over(
     dir / "index.html",
     withTemplate(id, config,
-        s"""|<p><strong>Iterations:</strong> ${suite.iterations}</p>
+        s"""|<p><strong>Iterations:</strong> ${suite.warmupIterations}/${suite.benchmarkIterations}</p>
             |${withNav(tabs)}""".stripMargin
     )
 )

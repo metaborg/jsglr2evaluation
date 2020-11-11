@@ -10,8 +10,8 @@ suite.languages.foreach { language =>
 
     val benchmarksMvnDir = (suite.spoofaxDir / "jsglr" / "org.spoofax.jsglr2.benchmark")
 
-    val warmupIterations = suite.iterations
-    val benchmarkIterations = suite.iterations
+    val warmupIterations = suite.warmupIterations
+    val benchmarkIterations = suite.benchmarkIterations
 
     mkdir! language.benchmarksDir
 
