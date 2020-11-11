@@ -17,7 +17,8 @@ batchSampledBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
         main=paste("Batch parsing", dimension, "vs. file size"),
         xlab="File size (1000 characters)",
         ylab=unit,
-        pch=plotSymbols)
+        pch=plotSymbols,
+        col=colors[match(c("standard"), allVariants)])
     
     legend("top", inset=0.05, legend=languages, pch=languageSymbols)
   }, file=outputFile)

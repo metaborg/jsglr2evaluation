@@ -23,7 +23,7 @@ batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows,
                           xlab="Language",
                           ylab=unit,
                           ylim=c(0, 1.01 * max(getHighs(data))),
-                          col=colors[1:length(variants)],
+                          col=colors[match(variants, allVariants)],
                           legend=variants,
                           beside=TRUE)
     
