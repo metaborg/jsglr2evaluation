@@ -124,6 +124,14 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
     ))
 }
 
+def batchContent =
+    s"""|<div class="row">
+        |   <div class="col"><img src="./figures/batch/throughput.png" /></div>
+        |   <div class="col"><img src="./figures/perFile/throughput.png" /></div>
+        |</div>
+        |<h2>Per Language</h2>
+        |${withNav(batchTabs)}""".stripMargin
+
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     (language.id, language.name, withNav(language.sources.incremental.map { source => {
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
@@ -136,11 +144,7 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
 
 val tabs = Seq(
     ("batch", "Batch",
-        if (exists! dir / "figures" / "batch" / "throughput.png" && batchTabs.nonEmpty)
-            s"""|<p><img src="./figures/batch/throughput.png" /></p>
-                |<h2>Per Language</h2>
-                |${withNav(batchTabs)}""".stripMargin
-        else ""),
+        if (exists! dir / "figures" / "batch" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
     ("recovery", "Recovery", ""),
     ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else "")
 )

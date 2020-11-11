@@ -21,4 +21,4 @@ savePlot <- function(plot, filename) {
 }
 
 colors <- c("#8c510a", "#d8b365", "#f6e8c3", "#f5f5f5", "#c7eae5", "#5ab4ac", "#01665e") # Color per parser variant, colorblind safe: http://colorbrewer2.org/#type=diverging&scheme=BrBG&n=6
-symbols <- c(0,2,5) # Color per language
+symbols <- c(0,2,5,3) # Color per language

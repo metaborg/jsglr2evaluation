@@ -8,15 +8,18 @@ perFileBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
   data <- data[data$variant == "standard",]
   languages <- unique(data$language)
 
+  languageSymbols <- symbols[match(languages, languages)]
+  plotSymbols <- symbols[match(data$language, languages)]
+  
   savePlot(function() {
     plot(data$size / 1000,
         data$score,
         main=paste("Batch parsing", dimension, "vs. file size"),
         xlab="File size (1000 characters)",
         ylab=unit,
-        pch=symbols[data$language])
+        pch=plotSymbols)
     
-    legend("top", inset=0.05, legend=languages, pch=symbols[languages])
+    legend("top", inset=0.05, legend=languages, pch=languageSymbols)
   }, file=outputFile)
 }
 
