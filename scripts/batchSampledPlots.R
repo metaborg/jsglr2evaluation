@@ -10,6 +10,7 @@ batchSampledBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
 
   languageSymbols <- symbols[match(languages, languages)]
   plotSymbols <- symbols[match(data$language, languages)]
+  color <- colors[match(c("standard"), allVariants)]
   
   savePlot(function() {
     plot(data$size / 1000,
@@ -18,9 +19,9 @@ batchSampledBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
         xlab="File size (1000 characters)",
         ylab=unit,
         pch=plotSymbols,
-        col=colors[match(c("standard"), allVariants)])
+        col=color)
     
-    legend("top", inset=0.05, legend=languages, pch=languageSymbols)
+    legend("top", inset=0.05, legend=languages, pch=languageSymbols, col=color)
   }, file=outputFile)
 }
 
