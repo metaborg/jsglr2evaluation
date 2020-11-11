@@ -1,6 +1,6 @@
 source("common.R")
 
-perFileBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
+batchSampledBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
   if (!file.exists(inputFile))
     return()
   
@@ -28,5 +28,5 @@ figuresDir <- args[2]
 
 dir.create(figuresDir, showWarnings = FALSE, recursive = TRUE)
 
-perFileBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),       paste(figuresDir, "time", sep="/"),       "time",       "ms")
-perFileBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(figuresDir, "throughput", sep="/"), "throughput", "1000 chars/s")
+batchSampledBenchmarksPlot(paste(resultsDir, "time.csv", sep="/"),       paste(figuresDir, "time", sep="/"),       "time",       "ms")
+batchSampledBenchmarksPlot(paste(resultsDir, "throughput.csv", sep="/"), paste(figuresDir, "throughput", sep="/"), "throughput", "1000 chars/s")

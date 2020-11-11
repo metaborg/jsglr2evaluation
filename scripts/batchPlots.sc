@@ -5,8 +5,8 @@ import $file.spoofax, spoofax._
 
 println("Generating batch plots...")
 
-%("Rscript", "batchPlots.R",        batchResultsDir,   figuresDir / "batch")(pwd)
-%("Rscript", "batchPerFilePlots.R", perFileResultsDir, figuresDir / "perFile")(pwd)
+%("Rscript", "batchPlots.R",        batchResultsDir,        figuresDir / "batch")(pwd)
+%("Rscript", "batchSampledPlots.R", batchSampledResultsDir, figuresDir / "batch-sampled")(pwd)
 
 suite.languages.foreach { language =>
     println(" " + language.name)

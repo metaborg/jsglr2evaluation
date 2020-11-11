@@ -127,7 +127,7 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 def batchContent =
     s"""|<div class="row">
         |   <div class="col"><img src="./figures/batch/throughput.png" /></div>
-        |   <div class="col"><img src="./figures/perFile/throughput.png" /></div>
+        |   <div class="col"><img src="./figures/batch-sampled/throughput.png" /></div>
         |</div>
         |<h2>Per Language</h2>
         |${withNav(batchTabs)}""".stripMargin

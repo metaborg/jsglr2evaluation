@@ -49,9 +49,9 @@ if (languagesWithBatchSources.nonEmpty) {
         }
     }
 
-    mkdir! perFileResultsDir
-    write.over(perFileResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
-    write.over(perFileResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
+    mkdir! batchSampledResultsDir
+    write.over(batchSampledResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
+    write.over(batchSampledResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
 }
 
 // Normalization: chars / ms == 1000 chars / s
@@ -113,13 +113,13 @@ suite.languages.foreach { language =>
             batchBenchmarks(Some(source))
         }
 
-        // Benchmarks (per file)
+        // Benchmarks (batch sampled)
 
-        language.sourceFilesPerFileBenchmark.foreach { file =>
+        language.sourceFilesBatchSampled.foreach { file =>
             val characters = (read ! file).length
             val normalize: BigDecimal => BigDecimal = score => characters / score
 
-            processBenchmarkCSV(CSV.parse(language.benchmarksDir / "perFile" / s"${file.last.toString}.csv"), row => row("Param: variant"), perFileResultsDir / "time.csv", perFileResultsDir / "throughput.csv", normalize, "," + characters)
+            processBenchmarkCSV(CSV.parse(language.benchmarksDir / "batch-sampled" / s"${file.last.toString}.csv"), row => row("Param: variant"), batchSampledResultsDir / "time.csv", batchSampledResultsDir / "throughput.csv", normalize, "," + characters)
         }
     }
 

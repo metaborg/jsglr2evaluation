@@ -13,7 +13,7 @@ import java.io.{FileInputStream, InputStream}
 // This allows default arguments in ADTs: https://stackoverflow.com/a/47644276
 implicit val customConfig: Configuration = Configuration.default.withDefaults
 
-case class Config(iterations: Int = 1, samples: Int = 1, shrinkBatchSources: Option[Int] = None, languages: Seq[Language])
+case class Config(iterations: Int = 1, batchSamples: Int = 1, shrinkBatchSources: Option[Int] = None, languages: Seq[Language])
 
 case class Language(id: String, name: String, extension: String, parseTable: ParseTable, sources: Sources, antlrBenchmarks: Seq[ANTLRBenchmark] = Seq.empty) {
     def parseTableStream(implicit suite: Suite) = parseTable match {
@@ -44,10 +44,8 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         sources.batch.filter { source =>
             sourceFilesBatch(Some(source)).nonEmpty
         }
-
-    def sourceFilesIncremental(implicit suite: Suite) = ls.rec! sourcesDir / "incremental" |? (_.ext == extension)
     
-    def sourceFilesPerFileBenchmark(implicit suite: Suite): Seq[Path] = {
+    def sourceFilesBatchSampled(implicit suite: Suite): Seq[Path] = {
         val files = sourceFilesBatch() sortBy(-_.size)
         val trimPercentage: Float = 10F
 
@@ -57,13 +55,15 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         val filesTrimmed = files.slice(from.round, to.round)
 
         val fileCount = filesTrimmed.size
-        val step = fileCount / suite.samples
+        val step = fileCount / suite.batchSamples
 
         if (fileCount > 0)
-            for (i <- 0 until suite.samples) yield filesTrimmed(i * step)
+            for (i <- 0 until suite.batchSamples) yield filesTrimmed(i * step)
         else
             Nil
     }
+
+    def sourceFilesIncremental(implicit suite: Suite) = ls.rec! sourcesDir / "incremental" |? (_.ext == extension)
 }
 
 sealed trait ParseTable {
@@ -116,7 +116,7 @@ case class IncrementalSource(id: String, repo: String,
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 
-case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, samples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
+case class Suite(configPath: Path, languages: Seq[Language], dir: Path, iterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir    = dir / "languages"
     def sourcesDir      = dir / "sources"
     def measurementsDir = dir / "measurements"
@@ -149,7 +149,7 @@ object Suite {
         val configJson = parser.parse(read! configPath)
         val config = configJson.flatMap(_.as[Config]).valueOr(throw _)
 
-        Suite(configPath, config.languages, dir, config.iterations, config.samples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
+        Suite(configPath, config.languages, dir, config.iterations, config.batchSamples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
     }
 
     implicit def languagesDir    = suite.languagesDir
@@ -166,8 +166,8 @@ object Suite {
     implicit def parseTableMeasurementsPath = resultsDir / "measurements-parsetable.csv"
     implicit def parsingMeasurementsPath    = resultsDir / "measurements-parsing.csv"
 
-    implicit def batchResultsDir       = resultsDir / "batch"
-    implicit def perFileResultsDir     = resultsDir / "perFile"
+    implicit def batchResultsDir        = resultsDir / "batch"
+    implicit def batchSampledResultsDir = resultsDir / "batch-sampled"
 
     implicit def incrementalResultsDir = resultsDir / "incremental"
 
