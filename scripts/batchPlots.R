@@ -19,7 +19,7 @@ batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows,
   savePlot(function() {
     # https://datascienceplus.com/building-barplots-with-error-bars/
     barCenters <- barplot(height=scores,
-                          main=paste("Batch parsing", dimension),
+                          main=paste("Batch parsing ", dimension, "\n(", subtitle, ")", sep=""),
                           xlab="Language",
                           ylab=unit,
                           ylim=c(0, 1.01 * max(getHighs(data))),
@@ -42,6 +42,7 @@ batchThroughputBenchmarksPlot <- function(inputFile, outputFile, dimension, unit
 
 resultsDir <- args[1]
 figuresDir <- args[2]
+subtitle   <- args[3]
 
 dir.create(figuresDir, showWarnings = FALSE, recursive = TRUE)
 

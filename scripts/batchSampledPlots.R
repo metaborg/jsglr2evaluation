@@ -14,7 +14,7 @@ batchSampledBenchmarksPlot <- function(inputFile, outputFile, dimension, unit) {
   savePlot(function() {
     plot(data$size / 1000,
         data$score,
-        main=paste("Batch parsing", dimension, "vs. file size"),
+        main=paste("Batch parsing", dimension, "vs. file size\n(JSGLR2 standard with imploding)"),
         xlab="File size (1000 characters)",
         ylab=unit,
         pch=plotSymbols,
