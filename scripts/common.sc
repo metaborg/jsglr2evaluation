@@ -116,6 +116,16 @@ case class IncrementalSource(id: String, repo: String,
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 
+sealed trait Comparison {
+    def dir: String
+}
+case object Internal extends Comparison {
+    def dir = "internal"
+}
+case object External extends Comparison {
+    def dir = "external"
+}
+
 case class Suite(configPath: Path, languages: Seq[Language], dir: Path, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir    = dir / "languages"
     def sourcesDir      = dir / "sources"

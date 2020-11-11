@@ -117,6 +117,8 @@ write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
 if(inScope("batch")) {
     write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurements(CSV.parse(parseTableMeasurementsPath)))
     write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurements(CSV.parse(parsingMeasurementsPath)))
-    write.over(suite.figuresDir / "benchmarks-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / "time.csv"),       Time))
-    write.over(suite.figuresDir / "benchmarks-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / "throughput.csv"), Throughput))
+    write.over(suite.figuresDir / "benchmarks-internal-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / "internal" / "time.csv"),       Time))
+    write.over(suite.figuresDir / "benchmarks-internal-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / "internal" / "throughput.csv"), Throughput))
+    write.over(suite.figuresDir / "benchmarks-external-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / "external" / "time.csv"),       Time))
+    write.over(suite.figuresDir / "benchmarks-external-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / "external" / "throughput.csv"), Throughput))
 }

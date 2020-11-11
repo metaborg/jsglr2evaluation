@@ -79,40 +79,51 @@ suite.languages.foreach { language =>
         }
     }
 
-    def batchBenchmarks(source: Option[BatchSource]) = {
+    def batchBenchmarks(comparison: Comparison, source: Option[BatchSource]) = {
         val (sourcesDir, reportDir) = source match {
             case None => (
                 language.sourcesDir / "batch",
-                language.benchmarksDir / "batch"
+                language.benchmarksDir / "batch" / comparison.dir
             )
             case Some(source) => (
                 language.sourcesDir / "batch" / source.id,
-                language.benchmarksDir / "batch" / source.id
+                language.benchmarksDir / "batch" / comparison.dir / source.id
             )
         }
 
         mkdir! reportDir
 
-        timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-            benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> "true"))
-        }
+        comparison match {
+            case Internal => {
+                timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                    benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> "false"))
+                }
+            }
+            case External => {
+                timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                    benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> "true", "variant" -> "standard"))
+                }
 
-        timed(s"benchmark [JSGLR1/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-            benchmarkJSGLR("JSGLR1BenchmarkExternal", reportDir / "jsglr1.csv", sourcesDir, "multiple", Map("implode" -> "true"))
-        }
+                timed(s"benchmark [JSGLR1/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                    benchmarkJSGLR("JSGLR1BenchmarkExternal", reportDir / "jsglr1.csv", sourcesDir, "multiple", Map("implode" -> "true"))
+                }
 
-        language.antlrBenchmarks.foreach { antlrBenchmark =>
-            timed(s"benchmark [${antlrBenchmark.id}/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-                benchmarkANTLR(antlrBenchmark.benchmark, reportDir / s"${antlrBenchmark.id}.csv", sourcesDir, "multiple")
+                language.antlrBenchmarks.foreach { antlrBenchmark =>
+                    timed(s"benchmark [${antlrBenchmark.id}/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                        benchmarkANTLR(antlrBenchmark.benchmark, reportDir / s"${antlrBenchmark.id}.csv", sourcesDir, "multiple")
+                    }
+                }
             }
         }
     }
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
-        batchBenchmarks(None)
+        batchBenchmarks(Internal, None)
+        batchBenchmarks(External, None)
 
         language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(Some(source))
+            batchBenchmarks(Internal, Some(source))
+            batchBenchmarks(External, Some(source))
         }
 
         timed(s"benchmark [JSGLR2/batch-sampled] (w: $warmupIterations, i: $benchmarkIterations) " + language.id) {

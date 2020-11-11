@@ -28,24 +28,29 @@ if (languagesWithBatchSources.nonEmpty) {
 
     // Setup header for benchmarks CSV
     mkdir! batchResultsDir
-    write.over(batchResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
-    write.over(batchResultsDir / "throughput.csv", "language,variant,score,low,high\n")
-
-    suite.languages.foreach { language =>
-        val languageResultsDir = batchResultsDir / language.id
-
-        mkdir! languageResultsDir
-
-        write.over(languageResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
-        write.over(languageResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+    
+    Seq(Internal, External).map { comparison =>
+        mkdir! batchResultsDir / comparison.dir
         
-        language.sourcesBatchNonEmpty.foreach { source =>
-            val sourceResultsDir = batchResultsDir / language.id / source.id
+        write.over(batchResultsDir / comparison.dir / "time.csv",       "language,variant,score,error,low,high\n")
+        write.over(batchResultsDir / comparison.dir / "throughput.csv", "language,variant,score,low,high\n")
+        
+        suite.languages.foreach { language =>
+            val languageResultsDir = batchResultsDir / comparison.dir / language.id
 
-            mkdir! sourceResultsDir
+            mkdir! languageResultsDir
 
-            write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
-            write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+            write.over(languageResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+            write.over(languageResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+            
+            language.sourcesBatchNonEmpty.foreach { source =>
+                val sourceResultsDir = batchResultsDir / comparison.dir / language.id / source.id
+
+                mkdir! sourceResultsDir
+
+                write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+                write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+            }
         }
     }
 
@@ -80,17 +85,22 @@ suite.languages.foreach { language =>
             }
         }
 
-        def batchBenchmarks(source: Option[BatchSource]) = {
+        def batchBenchmarks(comparison: Comparison, source: Option[BatchSource]) = {
             val (measurementsDir, benchmarksDir, resultsDirs) = source match {
                 case None => (
                     language.measurementsDir / "batch",
-                    language.benchmarksDir / "batch",
-                    Seq(batchResultsDir, batchResultsDir / language.id)
+                    language.benchmarksDir / "batch" / comparison.dir,
+                    Seq(
+                        batchResultsDir / comparison.dir,
+                        batchResultsDir / comparison.dir / language.id
+                    )
                 )
                 case Some(source) => (
                     language.measurementsDir / "batch" / source.id,
-                    language.benchmarksDir / "batch" / source.id,
-                    Seq(batchResultsDir / language.id / source.id)
+                    language.benchmarksDir / "batch" / comparison.dir / source.id,
+                    Seq(
+                        batchResultsDir / comparison.dir / language.id / source.id
+                    )
                 )
             }
 
@@ -98,19 +108,28 @@ suite.languages.foreach { language =>
             val normalize: BigDecimal => BigDecimal = score => characters / score
 
             resultsDirs.foreach { resultsDir =>
-                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                comparison match {
+                    case Internal => {
+                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                    }
+                    case External => {
+                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
 
-                language.antlrBenchmarks.foreach { antlrBenchmark =>
-                    processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                        language.antlrBenchmarks.foreach { antlrBenchmark =>
+                            processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                        }
+                    }
                 }
             }
         }
 
-        batchBenchmarks(None)
+        batchBenchmarks(Internal, None)
+        batchBenchmarks(External, None)
 
         language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(Some(source))
+            batchBenchmarks(Internal, Some(source))
+            batchBenchmarks(External, Some(source))
         }
 
         // Benchmarks (batch sampled)

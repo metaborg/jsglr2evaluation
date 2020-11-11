@@ -107,7 +107,10 @@ val config = removeCommentedLines(read! suite.configPath).trim
 def batchSourceTabContent(languageId: String, source: Option[BatchSource]) =
     s"""|<div class="row">
         |   <div class="col-sm">
-        |       <img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
+        |       <img src="./figures/batch/internal/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
+        |   </div>
+        |   <div class="col-sm">
+        |       <img src="./figures/batch/external/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
         |   </div>
         |   <div class="col-sm">
         |       <img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p>
@@ -126,7 +129,8 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 
 def batchContent =
     s"""|<div class="row">
-        |   <div class="col"><img src="./figures/batch/throughput.png" /></div>
+        |   <div class="col"><img src="./figures/batch/internal/throughput.png" /></div>
+        |   <div class="col"><img src="./figures/batch/external/throughput.png" /></div>
         |   <div class="col"><img src="./figures/batch-sampled/throughput.png" /></div>
         |</div>
         |<h2>Per Language</h2>
@@ -144,7 +148,7 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
 
 val tabs = Seq(
     ("batch", "Batch",
-        if (exists! dir / "figures" / "batch" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
+        if (exists! dir / "figures" / "batch" / "external" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
     ("recovery", "Recovery", ""),
     ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else "")
 )
