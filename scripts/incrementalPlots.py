@@ -25,11 +25,13 @@ def read_csv(p):
         return [{h: v for h, v in zip(header, line)} for line in lines[1:]]
 
 
-def base_plot(plot_size, x_label, y_label, z_label="", subplot_kwargs=None):
+def base_plot(plot_size, title, x_label, y_label, z_label="", subplot_kwargs=None):
     fig = plt.figure(figsize=plot_size[:2])
     ax = fig.add_subplot(**(subplot_kwargs if subplot_kwargs is not None else {}))
 
     ax.margins(*(0.1 / x for x in plot_size))
+
+    ax.set_title(title, y=1.0 + 0.4 / float(plot_size[1]), va="bottom")
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     if z_label:
@@ -46,7 +48,8 @@ def plot_memory_batch(rows, garbage):
     memoryErrorColumn = f"Error {garbage}."
 
     plot_size = (8, 6)
-    fig, ax = base_plot(plot_size, "File size (bytes)", "Memory (MiB)")
+    title = "Memory usage during parsing" if garbage == "incl" else "Memory increase of cache"
+    fig, ax = base_plot(plot_size, title, "File size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows))
     for parser in parsers:
@@ -62,7 +65,7 @@ def plot_memory_batch(rows, garbage):
 
 def plot_memory_incremental(rows):
     plot_size = (8, 6)
-    fig, ax = base_plot(plot_size, "Change size (bytes)", "Memory (MiB)")
+    fig, ax = base_plot(plot_size, "Memory usage", "Change size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
 
@@ -85,7 +88,7 @@ def plot_memory_incremental(rows):
 def plot_times(rows, parser_types):
     n = len(rows)
     plot_size = (8 if n < 50 else 12 if n < 100 else 18 if n < 200 else 24, 6)
-    fig, ax1 = base_plot(plot_size, "Version number", "Parse time (ms)")
+    fig, ax1 = base_plot(plot_size, "Parse time and change size per version", "Version number", "Parse time (ms)")
 
     # Plot lines on ax2 below those on ax1 (https://stackoverflow.com/a/57307539)
     ax1.set_zorder(1)  # default z order is 0 for ax1 and ax2
@@ -114,7 +117,7 @@ def plot_times(rows, parser_types):
 
 
 def plot_times_vs_changes(rows, unit, *changes):
-    fig, ax = base_plot((8, 6), f"Change size ({unit})", "Parse time (ms)")
+    fig, ax = base_plot((8, 6), "Parse time vs. change size", f"Change size ({unit})", "Parse time (ms)")
 
     x, y = zip(*((sum(int(row[change]) for change in changes), float(row["Incremental"]))
                  for row in rows if row["Incremental"]))
@@ -125,7 +128,7 @@ def plot_times_vs_changes(rows, unit, *changes):
 
 
 def plot_times_vs_changes_3d(rows):
-    fig, ax = base_plot((6, 6, 6), "Change size (bytes)", "Change size (chunks)", "Parse time (ms)",
+    fig, ax = base_plot((6, 6, 6), "Parse time vs. change size", "Change size (bytes)", "Change size (chunks)", "Parse time (ms)",
                         {"projection": "3d"})
 
     x, y, z = zip(*((int(row["Added"]) + int(row["Removed"]), int(row["Changes"]), float(row["Incremental"]))
