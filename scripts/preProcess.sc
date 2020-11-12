@@ -123,8 +123,8 @@ suite.languages.foreach { language =>
         write.over(language.sourcesDir / "batch" / "sizes.csv", sizes.mkString("\n") + "\n")
         %("Rscript", "sourceSizes.R", language.sourcesDir / "batch", language.name)(pwd)
     }
+}
 
-    timed("persist dynamic parse tables") {
-        persistDynamicParseTables
-    }
+timed("persist dynamic parse tables") {
+    persistDynamicParseTables
 }
