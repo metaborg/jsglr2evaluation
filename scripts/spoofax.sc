@@ -54,7 +54,7 @@ def getJSGLR1ParseTable(language: Language): JSGLR1ParseTable = {
             val parseTableTerm = readParseTableTerm(parseTable.term(language))
             val persistedTable = parseTable.bin(language)
 
-            new JSGLR1ParseTable(parseTableTerm, termFactory, persistedTable, new ParseTableIO(persistedTable))
+            new JSGLR1ParseTable(parseTableTerm, termFactory, persistedTable, new ParseTableIO(persistedTable, false))
         case _ =>
             val parseTableTerm = readParseTableTerm(language.parseTableStream)
             
