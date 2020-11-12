@@ -27,6 +27,7 @@ suite.languages.foreach { language =>
                     }, 10 seconds)
                 } catch {
                     case _: TimeoutException => (parser.id, ParseFailure(Some("timeout"), Timeout))
+                    case e => (parser.id, ParseFailure(Some("failed: " + e.getMessage), Invalid))
                 }
             }
 
