@@ -29,7 +29,7 @@ def readParseTableTerm(inputStream: InputStream) = termReader.parseFromStream(in
 
 def getJSGLR2ParseTable(variant: IntegrationVariant, language: Language): IParseTable =
     if (language.dynamicParseTableGeneration)
-        new ParseTableIO(language.parseTableStream).getParseTable()
+        new ParseTableIO(language.parseTableStream, false).getParseTable()
     else {
         val parseTableTerm = readParseTableTerm(language.parseTableStream)
 
