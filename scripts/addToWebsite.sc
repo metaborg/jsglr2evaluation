@@ -104,19 +104,35 @@ suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
 
 val config = removeCommentedLines(read! suite.configPath).trim
 
-def batchSourceTabContent(languageId: String, source: Option[BatchSource]) =
+def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
+    val measurements = language.measurementsBatch(source, "standard")
+    val elkhoundMeasurements = language.measurementsBatch(source, "elkhound")
+
     s"""|<div class="row">
-        |   <div class="col-sm"><img src="./figures/batch/internal/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |   <div class="col-sm"><img src="./figures/batch/external/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |   <div class="col-sm"><img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
+        |   <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |   <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |   <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
+        |</div>
+        |<div class="row">
+        |   <div class="col-sm">
+        |       <p><strong>Parse nodes context-free</strong>: ${measurements("parseNodesContextFree")}</p>
+        |       <p><strong>Parse nodes lexical</strong>: ${measurements("parseNodesLexical")}</p>
+        |       <p><strong>Parse nodes layout</strong>: ${measurements("parseNodesLayout")}</p>
+        |   </div>
+        |   <div class="col-sm">
+        |       <p><strong>Reductions LR</strong>: ${elkhoundMeasurements("doReductionsLR")}</p>
+        |       <p><strong>Reductions GLR (deterministic)</strong>: ${elkhoundMeasurements("doReductionsDeterministicGLR")}</p>
+        |       <p><strong>Reductions GLR (non-deterministic)</strong>: ${elkhoundMeasurements("doReductionsNonDeterministicGLR")}</p>
+        |   </div>
         |</div>""".stripMargin
+}
 
 def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
     (language.id, language.name, "<h3>Sources</h3>\n" + withNav(
-        (s"${language.id}-all", "All", batchSourceTabContent(language.id, None)) +:
+        (s"${language.id}-all", "All", batchSourceTabContent(language, None)) +:
         language.sourcesBatchNonEmpty.map { source =>
             // TODO add field source.name?
-            (source.id, source.id, batchSourceTabContent(language.id, Some(source)))
+            (source.id, source.id, batchSourceTabContent(language, Some(source)))
         }
     ))
 }
