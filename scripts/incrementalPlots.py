@@ -2,6 +2,7 @@ import csv
 from os import makedirs, path, scandir, remove, environ
 
 import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.art3d as art3d
 import pdftools
 
 DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
@@ -133,7 +134,14 @@ def plot_times_vs_changes_3d(rows):
 
     x, y, z = zip(*((int(row["Added"]) + int(row["Removed"]), int(row["Changes"]), float(row["Incremental"]))
                     for row in rows if row["Incremental"]))
-    ax.plot(x, y, z, COLORS["Incremental"], label="Incremental", markersize=3)
+    # ax.plot(x, y, z, COLORS["Incremental"], label="Incremental", markersize=3)
+    for xi, yi, zi in zip(x, y, z):
+        ax.add_line(art3d.Line3D(*zip((xi, yi, 0), (xi, yi, zi)), color='g', marker='o', markersize=3, markevery=(1, 1)))
+
+    # We need to manually set the upper limit here, because we don't call a proper plot function but manually draw lines
+    ax.set_xlim3d(0, max(1, *x))
+    ax.set_ylim3d(0, max(1, *y))
+    ax.set_zlim3d(0, max(1, *z))
 
     ax.view_init(elev=30, azim=-45)
     return fig
