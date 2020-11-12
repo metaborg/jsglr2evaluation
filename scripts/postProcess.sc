@@ -86,9 +86,8 @@ suite.languages.foreach { language =>
         }
 
         def batchBenchmarks(comparison: Comparison, source: Option[BatchSource]) = {
-            val (measurementsDir, benchmarksDir, resultsDirs) = source match {
+            val (benchmarksDir, resultsDirs) = source match {
                 case None => (
-                    language.measurementsDir / "batch",
                     language.benchmarksDir / "batch" / comparison.dir,
                     Seq(
                         batchResultsDir / comparison.dir,
@@ -96,7 +95,6 @@ suite.languages.foreach { language =>
                     )
                 )
                 case Some(source) => (
-                    language.measurementsDir / "batch" / source.id,
                     language.benchmarksDir / "batch" / comparison.dir / source.id,
                     Seq(
                         batchResultsDir / comparison.dir / language.id / source.id
@@ -104,7 +102,8 @@ suite.languages.foreach { language =>
                 )
             }
 
-            val characters = BigDecimal(CSV.parse(measurementsDir / "parsing.csv").rows.head("characters"))
+            val measurements = language.measurementsBatch(source)
+            val characters = BigDecimal(measurements("characters"))
             val normalize: BigDecimal => BigDecimal = score => characters / score
 
             resultsDirs.foreach { resultsDir =>

@@ -33,6 +33,16 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     def sourcesDir(implicit suite: Suite) = suite.sourcesDir / id
     
     def measurementsDir(implicit suite: Suite) = suite.measurementsDir / id
+
+    def measurementsBatch(source: Option[BatchSource])(implicit suite: Suite) = {
+        val measurementsCSV = (source match {
+            case None         => measurementsDir / "batch"
+            case Some(source) => measurementsDir / "batch" / source.id
+        }) / "parsing.csv"
+
+        CSV.parse(measurementsCSV).rows.head
+    }
+
     def benchmarksDir(implicit suite: Suite) = suite.benchmarksDir / id
 
     def sourceFilesBatch(source: Option[BatchSource] = None)(implicit suite: Suite) = ls.rec! (source match {
