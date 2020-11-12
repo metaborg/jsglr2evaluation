@@ -5,8 +5,11 @@ name <- args[2]
 sizes <- read.csv(file=paste(path, "sizes.csv", sep="/"), header=FALSE, sep=",")
 
 savePlot(function() {
-  hist(sizes[,1] / 1024,
+  kbs <- sizes[,1] / 1024
+
+  hist(kbs,
        main="File sizes",
        xlab="file size (kb)",
-       ylab="# files")
+       ylab="# files",
+       breaks=seq(from=0, to=ceiling(max(kbs)), by=1))
 }, file=paste(path, "sizes", sep="/"))
