@@ -106,15 +106,9 @@ val config = removeCommentedLines(read! suite.configPath).trim
 
 def batchSourceTabContent(languageId: String, source: Option[BatchSource]) =
     s"""|<div class="row">
-        |   <div class="col-sm">
-        |       <img src="./figures/batch/internal/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
-        |   </div>
-        |   <div class="col-sm">
-        |       <img src="./figures/batch/external/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p>
-        |   </div>
-        |   <div class="col-sm">
-        |       <img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p>
-        |   </div>
+        |   <div class="col-sm"><img src="./figures/batch/internal/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |   <div class="col-sm"><img src="./figures/batch/external/${languageId}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |   <div class="col-sm"><img src="./figures/batch/${languageId}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
         |</div>""".stripMargin
 
 def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
