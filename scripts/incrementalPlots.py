@@ -56,7 +56,10 @@ def plot_memory_batch(rows, garbage):
     for parser in parsers:
         x, y, y_err = zip(*((int(row["Size"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
                             for row in rows if row["Parser"] == parser and row[memoryColumn]))
-        ax.errorbar(x, y, y_err, fmt=COLORS[parser], label=parser, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+        ax.errorbar(x, y, y_err, fmt=COLORS[parser], label=parser, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+
+    ax.set_xlim(0)
+    ax.set_ylim(0)
 
     ax.legend(*ax.get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
 
@@ -69,16 +72,19 @@ def plot_memory_incremental(rows):
     fig, ax = base_plot(plot_size, "Memory usage", "Change size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
-
     for parser in parsers:
         for garbage in ["incl", "excl"]:
             color = "bv" if garbage == "incl" else "b^"
+            label = "During parsing" if garbage == "incl" else "Cache increase"
             memoryColumn = f"Memory ({garbage}. garbage)"
             memoryErrorColumn = f"Error {garbage}."
 
             x, y, y_err = zip(*((int(row["Added"]) + int(row["Removed"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
                                 for row in rows if row["Parser"] == parser and row[memoryColumn]))
-            ax.errorbar(x, y, y_err, fmt=color, label=memoryColumn, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+            ax.errorbar(x, y, y_err, fmt=color, label=label, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+
+    ax.set_xlim(0)
+    ax.set_ylim(0)
 
     ax.legend(*ax.get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
 
@@ -106,12 +112,16 @@ def plot_times(rows, parser_types):
     for column in parser_types:
         x, y, y_err = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
                             for row in rows if row[column]))
-        ax1.errorbar(x, y, y_err, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+        ax1.errorbar(x, y, y_err, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
 
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines1 + lines2, labels1 + labels2, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
+
+    ax1.set_xlim(-0.2)
+    ax1.set_ylim(0)
+    ax2.set_ylim(0)
 
     fig.tight_layout()
     return fig
@@ -122,7 +132,10 @@ def plot_times_vs_changes(rows, unit, *changes):
 
     x, y = zip(*((sum(int(row[change]) for change in changes), float(row["Incremental"]))
                  for row in rows if row["Incremental"]))
-    ax.plot(x, y, COLORS["Incremental"], label="Incremental", markersize=3)
+    ax.plot(x, y, COLORS["Incremental"], label="Incremental", markersize=3, clip_on=False)
+
+    ax.set_xlim(0)
+    ax.set_ylim(0)
 
     fig.tight_layout()
     return fig
