@@ -11,7 +11,11 @@ COLORS = {
     "Batch": "rs",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
+    "jsglr2-standard": "rs",
+    "jsglr2-incremental": "bv",  # TODO fix color for incremental: with vs. without cache
 }
+
+MiB = 1024 * 1024
 
 
 def read_csv(p):
@@ -32,6 +36,50 @@ def base_plot(plot_size, x_label, y_label, z_label="", subplot_kwargs=None):
         ax.set_zlabel(z_label)
 
     return fig, ax
+
+
+def plot_memory_batch(rows, garbage):
+    if garbage != "incl" and garbage != "excl":
+        raise Exception("Invalid argument")
+
+    memoryColumn = f"Memory ({garbage}. garbage)"
+    memoryErrorColumn = f"Error {garbage}."
+
+    plot_size = (8, 6)
+    fig, ax = base_plot(plot_size, "File size (bytes)", "Memory (MiB)")
+
+    parsers = list(set(row["Parser"] for row in rows))
+    for parser in parsers:
+        x, y, y_err = zip(*((int(row["Size"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
+                            for row in rows if row["Parser"] == parser and row[memoryColumn]))
+        ax.errorbar(x, y, y_err, fmt=COLORS[parser], label=parser, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+
+    ax.legend(*ax.get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
+
+    fig.tight_layout()
+    return fig
+
+
+def plot_memory_incremental(rows):
+    plot_size = (8, 6)
+    fig, ax = base_plot(plot_size, "Change size (bytes)", "Memory (MiB)")
+
+    parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
+
+    for parser in parsers:
+        for garbage in ["incl", "excl"]:
+            color = "bv" if garbage == "incl" else "b^"
+            memoryColumn = f"Memory ({garbage}. garbage)"
+            memoryErrorColumn = f"Error {garbage}."
+
+            x, y, y_err = zip(*((int(row["Added"]) + int(row["Removed"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
+                                for row in rows if row["Parser"] == parser and row[memoryColumn]))
+            ax.errorbar(x, y, y_err, fmt=color, label=memoryColumn, ecolor="k", elinewidth=1, capsize=2, barsabove=True)
+
+    ax.legend(*ax.get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
+
+    fig.tight_layout()
+    return fig
 
 
 def plot_times(rows, parser_types):
@@ -103,8 +151,8 @@ def main():
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
-                report_path = path.join(FIGURES_DIR, "incremental", language.name, csv_basename)
-                makedirs(report_path, exist_ok=True)
+                figure_path = path.join(FIGURES_DIR, "incremental", language.name, csv_basename)
+                makedirs(figure_path, exist_ok=True)
 
                 figures = [
                     (plot_times(result_data, ["Batch", "Incremental", "IncrementalNoCache"]), "report"),
@@ -116,15 +164,44 @@ def main():
                 ]
 
                 for fig, name in figures:
-                    fig.savefig(path.join(report_path, name + ".pdf"))
-                    fig.savefig(path.join(report_path, name + ".svg"))
+                    fig.savefig(path.join(figure_path, name + ".pdf"))
+                    fig.savefig(path.join(figure_path, name + ".svg"))
 
                 plt.close("all")
 
-                merged_path = path.join(report_path, "merged.pdf")
+                merged_path = path.join(figure_path, "merged.pdf")
                 if path.exists(merged_path):
                     remove(merged_path)
-                pdftools.pdf_merge([path.join(report_path, name + ".pdf") for _, name in figures], merged_path)
+                pdftools.pdf_merge([path.join(figure_path, name + ".pdf") for _, name in figures], merged_path)
+
+    memory_benchmarks_dir = path.join(DATA_DIR, "memoryBenchmarks")
+    
+    if path.isdir(memory_benchmarks_dir):
+        print("Creating plots for memory benchmarks...")
+        for language in scandir(memory_benchmarks_dir):
+            print(f"  {language.name}")
+            result_data_batch = read_csv(path.join(language.path, "batch.csv"))
+            result_data_incremental = read_csv(path.join(language.path, "incremental.csv"))
+
+            figure_path = path.join(FIGURES_DIR, "memoryBenchmarks", language.name)
+            makedirs(figure_path, exist_ok=True)
+
+            figures = [
+                (plot_memory_batch(result_data_batch, "incl"), "report-full-garbage"),
+                (plot_memory_batch(result_data_batch, "excl"), "report-cache-size"),
+                (plot_memory_incremental(result_data_incremental), "report-incremental"),
+            ]
+
+            for fig, name in figures:
+                fig.savefig(path.join(figure_path, name + ".pdf"))
+                fig.savefig(path.join(figure_path, name + ".svg"))
+
+            plt.close("all")
+
+            merged_path = path.join(figure_path, "merged.pdf")
+            if path.exists(merged_path):
+                remove(merged_path)
+            pdftools.pdf_merge([path.join(figure_path, name + ".pdf") for _, name in figures], merged_path)
 
 
 if __name__ == '__main__':

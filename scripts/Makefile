@@ -66,11 +66,16 @@ cleanMeasurements:
 benchmarks: $(BENCHMARKS_JAR)
 	amm benchmarks.sc
 
+# TODO: change absolute path to pull-and-build of my fork at https://github.com/mpsijm/simple-allocation-instrumenter
+memoryBenchmarks:
+	JAVA_OPTS="-Xmx8G -Xms8G -javaagent:/home/maarten/git/thesis/simple-allocation-instrumenter/target/java-allocation-instrumenter-HEAD-SNAPSHOT.jar -Djdk.attach.allowAttachSelf=true" amm memoryBenchmarks.sc
+
 $(BENCHMARKS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
 	mvn -f $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark -q install
 
 cleanBenchmarks:
 	-rm -r $(DATA_DIR)/benchmarks
+	-rm -r $(DATA_DIR)/memoryBenchmarks
 	-rm -r $(JSGLR_DIR)/org.spoofax.jsglr2.benchmarks/target
 
 

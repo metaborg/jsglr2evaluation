@@ -5,8 +5,7 @@ import $file.spoofaxDeps
 import $ivy.`org.metaborg:org.spoofax.jsglr2:2.6.0-SNAPSHOT`
 
 import org.spoofax.jsglr2.incremental.EditorUpdate
-import org.spoofax.jsglr2.incremental.diff.IStringDiff
-import org.spoofax.jsglr2.incremental.diff.JGitHistogramDiff
+import org.spoofax.jsglr2.incremental.diff.{IStringDiff,JGitHistogramDiff}
 
 import scala.collection.JavaConverters._
 
@@ -188,7 +187,7 @@ suite.languages.foreach { language =>
                 val deleted = diffs.map(diff => diff.asScala.map(_.deletedLength).sum).sum
                 val inserted = diffs.map(diff => diff.asScala.map(_.insertedLength).sum).sum
                 val numChanges = diffs.map(diff => diff.size).sum
-                write.append(resultPath, "," + deleted + "," + inserted + "," + numChanges + "\n")
+                write.append(resultPath, s",${deleted},${inserted},${numChanges}\n")
             }
         }
     }}

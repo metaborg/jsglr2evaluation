@@ -49,6 +49,7 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         CSV.parse(measurementsDir / "batch" / "parsetable.csv").rows.head
 
     def benchmarksDir(implicit suite: Suite) = suite.benchmarksDir / id
+    def memoryBenchmarksDir(implicit suite: Suite) = suite.memoryBenchmarksDir / id
 
     def sourceFilesBatch(source: Option[BatchSource] = None)(implicit suite: Suite) = ls.rec! (source match {
         case Some(source) => sourcesDir / "batch" / source.id
@@ -147,12 +148,13 @@ case object External extends Comparison {
 }
 
 case class Suite(configPath: Path, languages: Seq[Language], dir: Path, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
-    def languagesDir    = dir / "languages"
-    def sourcesDir      = dir / "sources"
-    def measurementsDir = dir / "measurements"
-    def benchmarksDir   = dir / "benchmarks"
-    def resultsDir      = dir / "results"
-    def websiteDir      = dir / "website"
+    def languagesDir        = dir / "languages"
+    def sourcesDir          = dir / "sources"
+    def measurementsDir     = dir / "measurements"
+    def benchmarksDir       = dir / "benchmarks"
+    def memoryBenchmarksDir = dir / "memoryBenchmarks"
+    def resultsDir          = dir / "results"
+    def websiteDir          = dir / "website"
 
     def scopes = Seq(
         if (languages.exists(_.sources.batch.nonEmpty)) Some("batch") else None,
@@ -182,17 +184,18 @@ object Suite {
         Suite(configPath, config.languages, dir, config.warmupIterations, config.benchmarkIterations, config.batchSamples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
     }
 
-    implicit def languagesDir    = suite.languagesDir
-    implicit def sourcesDir      = suite.sourcesDir
-    implicit def measurementsDir = suite.measurementsDir
-    implicit def benchmarksDir   = suite.benchmarksDir
-    implicit def resultsDir      = suite.resultsDir
-    implicit def figuresDir      = suite.figuresDir
-    implicit def websiteDir      = suite.websiteDir
-    implicit def dev             = suite.dev
-    
+    implicit def languagesDir        = suite.languagesDir
+    implicit def sourcesDir          = suite.sourcesDir
+    implicit def measurementsDir     = suite.measurementsDir
+    implicit def benchmarksDir       = suite.benchmarksDir
+    implicit def memoryBenchmarksDir = suite.memoryBenchmarksDir
+    implicit def resultsDir          = suite.resultsDir
+    implicit def figuresDir          = suite.figuresDir
+    implicit def websiteDir          = suite.websiteDir
+    implicit def dev                 = suite.dev
+
     implicit def inScope(scope: String) = suite.scopes.contains(scope)
-    
+
     implicit def parseTableMeasurementsPath = resultsDir / "measurements-parsetable.csv"
     implicit def parsingMeasurementsPath    = resultsDir / "measurements-parsing.csv"
 

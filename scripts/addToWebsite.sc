@@ -158,13 +158,20 @@ def batchContent =
         |${withNav(batchTabs)}""".stripMargin
 
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
-    (language.id, language.name, withNav(language.sources.incremental.map { source => {
+    val sourcesTabs = withNav(language.sources.incremental.map { source => {
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name?
         (source.id, source.id, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse/$plot.svg" /></p>"""
         }.mkString("\n"))
-    }}))
+    }})
+    (language.id, language.name,
+        s"""|<div class="row">
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-full-garbage.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-incremental.svg" /></div>
+            |</div>
+            |${sourcesTabs}""")
 }
 
 val tabs = Seq(
