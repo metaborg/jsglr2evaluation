@@ -58,7 +58,7 @@ suite.languages.foreach { language =>
                         mv.over(file, sourcesDir / "invalid" / filename.last)
                     } else if (ambiguous) {
                         mkdir! sourcesDir / "ambiguous"
-                        mv.over(file, sourcesDir / "ambiguous" / filename.last)
+                        cp.over(file, sourcesDir / "ambiguous" / filename.last)
                     } else {
                         mkdir! sourcesDir / "timeout"
                         mv.over(file, sourcesDir / "timeout" / filename.last)
