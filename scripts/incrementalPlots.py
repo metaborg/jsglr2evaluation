@@ -49,7 +49,7 @@ def plot_memory_batch(rows, garbage):
     memoryErrorColumn = f"Error {garbage}."
 
     plot_size = (8, 6)
-    title = "Memory usage during parsing" if garbage == "incl" else "Memory increase of cache"
+    title = "Memory usage during parsing in batch mode" if garbage == "incl" else "Memory increase of cache after first parse"
     fig, ax = base_plot(plot_size, title, "File size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows))
@@ -69,7 +69,7 @@ def plot_memory_batch(rows, garbage):
 
 def plot_memory_incremental(rows):
     plot_size = (8, 6)
-    fig, ax = base_plot(plot_size, "Memory usage", "Change size (bytes)", "Memory (MiB)")
+    fig, ax = base_plot(plot_size, "Memory usage in incremental mode", "Change size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
     for parser in parsers:
@@ -107,7 +107,7 @@ def plot_times(rows, parser_types):
     ax2.tick_params(labelcolor="y")
 
     x, y = zip(*((int(row["i"]), int(row["Removed"]) + int(row["Added"])) for row in rows if row["Added"]))
-    ax2.plot(x, y, "yo", label="Change size", markersize=3)
+    ax2.plot(x, y, "yo", label="Change size", markersize=3)  # clip_on=False won't work here due to custom z-order
 
     for column in parser_types:
         x, y, y_err = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
@@ -119,7 +119,8 @@ def plot_times(rows, parser_types):
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines1 + lines2, labels1 + labels2, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
 
-    ax1.set_xlim(-0.2)
+    max_i = max(float(row["i"]) for row in rows)
+    ax1.set_xlim(-max_i / 50, max_i + max_i / 50)
     ax1.set_ylim(0)
     ax2.set_ylim(0)
 
