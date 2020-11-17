@@ -162,7 +162,7 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name?
         (source.id, source.id, plots.map { plot =>
-            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse/$plot.svg" /></p>"""
+            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
     }})
     (language.id, language.name,
