@@ -13,7 +13,7 @@ languages:
       batch:
         - id: apache-commons-lang
           repo: https://github.com/apache/commons-lang.git
-        - id: https://github.com/netty/netty
+        - id: netty
           repo: https://github.com/netty/netty.git
         - id: spring-boot
           repo: https://github.com/spring-projects/spring-boot.git
