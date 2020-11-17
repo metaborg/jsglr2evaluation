@@ -12,6 +12,7 @@ DEV?=false
 JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
 MEASUREMENTS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.measure/target/org.spoofax.jsglr2.measure-2.6.0-SNAPSHOT.jar
 BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsglr2.benchmark-2.6.0-SNAPSHOT.jar
+MEMORY_BENCHMARKS_JAR=$(DATA_DIR)/tools/simple-allocation-instrumenter/target/java-allocation-instrumenter-HEAD-SNAPSHOT.jar
 
 # Environment variables passed to the Ammonite/Python/R scripts
 export JSGLR2EVALUATION_DATA_DIR=$(DATA_DIR)
@@ -20,11 +21,11 @@ export JSGLR2EVALUATION_FIGURES_DIR=$(FIGURES_DIR)
 export JSGLR2EVALUATION_DEV=$(DEV)
 
 
-all: languages sources preProcessing measurements benchmarks postProcessing figures publish
+all: languages sources preProcessing measurements benchmarks memoryBenchmarks postProcessing figures publish
 
-repeat: cleanMeasurements cleanBenchmarks measurements benchmarks postProcessing figures publish
+repeat: cleanMeasurements cleanBenchmarks measurements benchmarks memoryBenchmarks postProcessing figures publish
 
-clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanFigures cleanArchive
+clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanMemoryBenchmarks cleanPostProcessing cleanFigures cleanArchive
 
 cleanAll: clean all
 
@@ -66,17 +67,28 @@ cleanMeasurements:
 benchmarks: $(BENCHMARKS_JAR)
 	amm benchmarks.sc
 
-# TODO: change absolute path to pull-and-build of my fork at https://github.com/mpsijm/simple-allocation-instrumenter
-memoryBenchmarks:
-	JAVA_OPTS="-Xmx8G -Xms8G -javaagent:/home/maarten/git/thesis/simple-allocation-instrumenter/target/java-allocation-instrumenter-HEAD-SNAPSHOT.jar -Djdk.attach.allowAttachSelf=true" amm memoryBenchmarks.sc
-
 $(BENCHMARKS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
 	mvn -f $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark -q install
 
 cleanBenchmarks:
 	-rm -r $(DATA_DIR)/benchmarks
-	-rm -r $(DATA_DIR)/memoryBenchmarks
 	-rm -r $(JSGLR_DIR)/org.spoofax.jsglr2.benchmarks/target
+
+
+# Performs memory benchmarks
+memoryBenchmarks: $(MEMORY_BENCHMARKS_JAR)
+	JAVA_OPTS="-Xmx8G -javaagent:$(MEMORY_BENCHMARKS_JAR) -Djdk.attach.allowAttachSelf=true" amm memoryBenchmarks.sc
+
+# Pull custom java-allocation-instrumenter library from fork at https://github.com/mpsijm/simple-allocation-instrumenter
+$(MEMORY_BENCHMARKS_JAR):
+	if [ ! -d $(DATA_DIR)/tools/simple-allocation-instrumenter/.git ]; then git clone https://github.com/mpsijm/simple-allocation-instrumenter $(DATA_DIR)/tools/simple-allocation-instrumenter; fi
+	cd $(DATA_DIR)/tools/simple-allocation-instrumenter && \
+		git pull && \
+		mvn -q -DskipTests=true -Dmaven.javadoc.skip=true install
+
+cleanMemoryBenchmarks:
+	-rm -r $(DATA_DIR)/memoryBenchmarks
+	-rm -rf $(DATA_DIR)/tools/simple-allocation-instrumenter
 
 
 # Post process results from measurements and benchmarks
