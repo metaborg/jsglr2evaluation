@@ -17,16 +17,16 @@ case class Config(warmupIterations: Int = 1, benchmarkIterations: Int = 1, batch
 
 case class Language(id: String, name: String, extension: String, parseTable: ParseTable, sources: Sources, antlrBenchmarks: Seq[ANTLRBenchmark] = Seq.empty) {
     def parseTableStream(implicit suite: Suite) = parseTable match {
-        case parseTable @ GitSpoofax(_, _, dynamic) if dynamic => parseTable.bin(this)
+        case parseTable @ GitSpoofax(_, _, _, dynamic) if dynamic => parseTable.bin(this)
         case _ => parseTable.term(this)
     }
     def parseTablePath(implicit suite: Suite) = parseTable match {
-        case parseTable @ GitSpoofax(_, _, dynamic) if dynamic => parseTable.binPath(this)
+        case parseTable @ GitSpoofax(_, _, _, dynamic) if dynamic => parseTable.binPath(this)
         case _ => parseTable.termPath(this)
     }
     def parseTableTermPath(implicit suite: Suite) = parseTable.termPath(this)
     def dynamicParseTableGeneration = parseTable match {
-        case GitSpoofax(_, _, dynamic) => dynamic
+        case GitSpoofax(_, _, _, dynamic) => dynamic
         case _ => false
     }
 
@@ -82,7 +82,7 @@ sealed trait ParseTable {
     def term(language: Language)(implicit suite: Suite) = new FileInputStream(termPath(language).toString)
     def termPath(language: Language)(implicit suite: Suite): Path
 }
-case class GitSpoofax(repo: String, subDir: String, dynamic: Boolean = false) extends ParseTable {
+case class GitSpoofax(repo: String, subDir: String, version: String = "master", dynamic: Boolean = false) extends ParseTable {
     def repoDir(language: Language)(implicit suite: Suite) = Suite.languagesDir / language.id
     def spoofaxProjectDir(language: Language)(implicit suite: Suite) = repoDir(language) / RelPath(subDir)
     

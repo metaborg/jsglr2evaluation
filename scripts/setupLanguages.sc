@@ -10,13 +10,14 @@ suite.languages.foreach { language =>
     println(" " + language.name)
 
     language.parseTable match {
-        case gitSpoofax @ GitSpoofax(repo: String, _, _) =>
+        case gitSpoofax @ GitSpoofax(repo: String, _, version: String, _) =>
             rm!    gitSpoofax.repoDir(language)
             mkdir! gitSpoofax.repoDir(language)
     
             timed("clone " + language.id) {
                 println(s"  Cloning ${repo}...")
                 %%("git", "clone", repo, ".")(gitSpoofax.repoDir(language))
+                %%("git", "checkout", version)
             }
 
             val configPath = gitSpoofax.spoofaxProjectDir(language) / "metaborg.yaml"
