@@ -16,7 +16,7 @@ suite.languages.foreach { language =>
             mkdir! repoDir
     
             timed("clone " + language.id) {
-                println(s"  Cloning ${repo}...")
+                println(s"  Cloning ${repo} (version: ${version})...")
                 %%("git", "clone", repo, ".")(repoDir)
                 %%("git", "checkout", version)(repoDir)
             }
