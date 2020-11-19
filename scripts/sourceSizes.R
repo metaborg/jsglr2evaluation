@@ -9,7 +9,7 @@ savePlot(function() {
 
   hist(kbs,
        main="File sizes",
-       xlab="file size (kb)",
+       xlab="file size (kB)",
        ylab="# files",
        breaks=seq(from=0, to=ceiling(max(kbs)), by=1))
 }, file=paste(path, "sizes", sep="/"))
