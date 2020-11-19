@@ -21,14 +21,7 @@ suite.languages.foreach { language =>
             val filename = file relativeTo language.sourcesDir
 
             val results: Seq[(String, ParseResult)] = parsers.map { parser =>
-                val result = try {
-                    Await.result(Future.successful {
-                        parser.parse(input)
-                    }, 10 seconds)
-                } catch {
-                    case _: TimeoutException => ParseFailure(Some("timeout"), Timeout)
-                    case e => ParseFailure(Some("failed: " + e.getMessage), Invalid)
-                }
+                val result = withTimeout(parser.parse(input), 10)(ParseFailure(Some("timeout"), Timeout))(e => ParseFailure(Some("failed: " + e.getMessage), Invalid))
 
                 (parser.id, result)
             }

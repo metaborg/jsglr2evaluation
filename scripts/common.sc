@@ -262,3 +262,19 @@ import scala.math.BigDecimal.RoundingMode
 
 def round(number: BigDecimal, scale: Int = 0): BigDecimal = number.setScale(scale, RoundingMode.HALF_UP)
 def round(number: String): String = if (number != "NaN" && number != "") round(BigDecimal(number)).toString else number
+
+import java.util.concurrent._
+
+def withTimeout[T](body: => T, timeout: Long)(onTimeOut: => T)(onFailure: Throwable => T): T = {
+    val executor = Executors.newSingleThreadExecutor()
+    val future = executor.submit(new Callable[T] {
+        def call: T = body
+    })
+
+    try {
+        future.get(timeout, TimeUnit.SECONDS)
+    } catch {
+        case _: TimeoutException => onTimeOut
+        case e => onFailure(e)
+    }
+}
