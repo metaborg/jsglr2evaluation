@@ -93,6 +93,7 @@ object Parser {
     def variants(language: Language)(implicit suite: Suite): Seq[Parser] = Seq(
         //JSGLR1Parser(language),
         JSGLR2Parser(language, JSGLR2Variant.Preset.standard),
+        JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound),
         JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true),
         //JSGLR2Parser(language.parseTablePath, JSGLR2Variant.Preset.recovery),
         //JSGLR2Parser(language.parseTablePath, JSGLR2Variant.Preset.recoveryIncremental, true),
