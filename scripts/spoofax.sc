@@ -50,7 +50,7 @@ def getJSGLR2(variant: IntegrationVariant, language: Language) = {
 
 def getJSGLR1ParseTable(language: Language): JSGLR1ParseTable = {
     language.parseTable match {
-        case parseTable @ GitSpoofax(_, _, dynamic) =>
+        case parseTable @ GitSpoofax(_, _, _, dynamic) =>
             val parseTableTerm = readParseTableTerm(parseTable.term(language))
             val persistedTable = parseTable.bin(language)
 
