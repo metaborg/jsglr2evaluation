@@ -101,7 +101,7 @@ suite.languages.foreach { language =>
             }
             case External => {
                 timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-                    benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> "true", "variant" -> "standard"))
+                    benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> "true", "variant" -> "standard,incremental"))
                 }
 
                 timed(s"benchmark [JSGLR1/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
