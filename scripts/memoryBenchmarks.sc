@@ -19,11 +19,6 @@ import scala.collection.JavaConverters._
 
 val diff: IStringDiff = new JGitHistogramDiff();
 
-val gc = () => {
-    java.lang.System.gc()
-    // com.google.common.testing.GcFinalization.awaitFullGc()
-}
-
 val allocationSizeMeasurer = new AllocationSizeMeasurer();
 
 println("Executing memory benchmarks...")
@@ -75,7 +70,7 @@ suite.languages.foreach { language =>
                 val filename = file relativeTo language.sourcesDir
 
                 val results: (Seq[Long], Seq[Long]) = (1 to (warmupIterations + benchmarkIterations)).map { i =>
-                    gc()
+                    java.lang.System.gc()
 
                     val parserSizeBefore = GraphLayout.parseInstance(jsglr2parser.jsglr2).totalSize()
                     allocationSizeMeasurer.startMeasure()
@@ -112,7 +107,7 @@ suite.languages.foreach { language =>
                 val filename = file2 relativeTo language.sourcesDir
 
                 val results: (Seq[Long], Seq[Long]) = (1 to (warmupIterations + benchmarkIterations)).map { i =>
-                    gc()
+                    java.lang.System.gc()
 
                     jsglr2parser.jsglr2.parseResult(input1, "some random name to trigger caching", null)
 
