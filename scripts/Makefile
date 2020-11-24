@@ -1,5 +1,6 @@
 .PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing figures latexTables batchPlots incrementalPlots cleanFigures publish archive cleanArchive websiteRepo addToWebsite websitePush
 
+SHELL := /bin/bash
 
 # Configuration (using environment variables or arguments passed to make)
 DATA_DIR?=~/jsglr2evaluation-data
