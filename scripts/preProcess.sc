@@ -70,8 +70,8 @@ object PreProcessing {
 
                     verdict match {
                         case Some(folder) =>
-                            mkdir! sourcesDir / folder
-                            mv.over(file, sourcesDir / folder / filename.last)
+                            mkdir! sourcesDir / folder / file.relativeTo(sourcesDir) / up
+                            mv.over(file, sourcesDir / folder / file.relativeTo(sourcesDir))
                         case None =>
                     }
                 }
