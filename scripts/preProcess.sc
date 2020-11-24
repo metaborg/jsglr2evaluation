@@ -51,16 +51,16 @@ object PreProcessing {
                             val invalid = failures.exists(_._3 == Invalid)
                             val ambiguous = failures.exists(_._3 == Ambiguous)
                             
-                            // if (invalid) {
-                            //     mkdir! sourcesDir / "invalid"
-                            //     mv.over(file, sourcesDir / "invalid" / filename.last)
-                            // } else if (ambiguous) {
-                            //     mkdir! sourcesDir / "ambiguous"
-                            //     cp.over(file, sourcesDir / "ambiguous" / filename.last)
-                            // } else {
-                            //     mkdir! sourcesDir / "timeout"
-                            //     mv.over(file, sourcesDir / "timeout" / filename.last)
-                            // }
+                            if (invalid) {
+                                mkdir! sourcesDir / "invalid"
+                                mv.over(file, sourcesDir / "invalid" / filename.last)
+                            } else if (ambiguous) {
+                                mkdir! sourcesDir / "ambiguous"
+                                cp.over(file, sourcesDir / "ambiguous" / filename.last)
+                            } else {
+                                mkdir! sourcesDir / "timeout"
+                                mv.over(file, sourcesDir / "timeout" / filename.last)
+                            }
 
                             false
                         } else if (!consistentASTs(successASTs)) {
