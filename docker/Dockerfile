@@ -11,7 +11,7 @@ RUN apt-get update
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
-RUN apt-get install -y software-properties-common openjdk-8-jdk wget curl git make python3-venv
+RUN apt-get install -y software-properties-common openjdk-8-jdk wget curl git make python3-venv vim
 
 # Install Maven 3
 RUN cd bin &&\

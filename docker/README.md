@@ -29,7 +29,7 @@ docker run --rm -v ~/jsglr2evaluation:/jsglr2evaluation/data -it --entrypoint /b
 ```
 
 `-it`: Run the container interactively
-`--entrypoint /bin/bash`: Start a shell instead of directly running the evaluation scripts
+`--entrypoint /bin/bash`: Start a shell instead of directly running the evaluation scripts (`vim` is installed)
 
 ## Docker documentattion
 
