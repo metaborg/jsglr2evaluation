@@ -13,6 +13,7 @@ COLORS = {
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
     "jsglr2-standard": "rs",
+    "jsglr2-elkhound": "yo",
     "jsglr2-incremental": "bv",  # TODO fix color for incremental: with vs. without cache
 }
 
