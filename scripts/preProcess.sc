@@ -70,8 +70,13 @@ object PreProcessing {
 
                     verdict match {
                         case Some(folder) =>
-                            mkdir! sourcesDir / folder / file.relativeTo(sourcesDir) / up
-                            mv.over(file, sourcesDir / folder / file.relativeTo(sourcesDir))
+                            val destinationFile = sourcesDir / folder / file.relativeTo(sourcesDir)
+                            mkdir! destinationFile / up
+                            if (verdict == "ambiguous")
+                                // We still want to benchmark ambiguous files, but also want to be able to inspect them
+                                cp.over(file, destinationFile)
+                            else
+                                mv.over(file, destinationFile)
                         case None =>
                     }
                 }
