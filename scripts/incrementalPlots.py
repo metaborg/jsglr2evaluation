@@ -177,6 +177,10 @@ def main():
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
+                if len([x for x in result_data if x["Batch"] or x["Incremental"] or x["IncrementalNoCache"]]) <= 0:
+                    print("    No data found, skipping")
+                    continue
+
                 figure_path = path.join(FIGURES_DIR, "incremental", language.name, csv_basename)
                 makedirs(figure_path, exist_ok=True)
 
