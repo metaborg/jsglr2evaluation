@@ -3,6 +3,7 @@
 
 # Configuration (using environment variables or arguments passed to make)
 SPOOFAX_VERSION?=master
+SDF_VERSION?=develop/jsglr2
 JSGLR_VERSION?=develop/jsglr2
 EVALUATION_TARGET?=all
 
@@ -19,22 +20,25 @@ pull-spoofax-releng:
 		./b checkout -y && \
 		./b update
 
-pull-jsglr2: pull-spoofax-releng
+pull-sdf: pull-spoofax-releng
+	cd /jsglr2evaluation/data/spoofax/sdf && git checkout $(SDF_VERSION) && git pull
+
+pull-jsglr: pull-spoofax-releng
 	cd /jsglr2evaluation/data/spoofax/jsglr && git checkout $(JSGLR_VERSION) && git pull
 
 
-build-spoofax: pull-jsglr2
+build-spoofax: pull-sdf pull-jsglr
 	cd /jsglr2evaluation/data/spoofax && ./b build java
 
-build-jsglr2: pull-jsglr2
+build-jsglr: pull-jsglr
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr && mvn install
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2 && mvn install
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.integration && mvn install
 
-build-jsglr2-benchmark: pull-jsglr2
+build-jsglr2-benchmark: pull-jsglr
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.benchmark && mvn install
 
-build-jsglr2-measure: pull-jsglr2
+build-jsglr2-measure: pull-jsglr
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.measure && mvn install
 
 
