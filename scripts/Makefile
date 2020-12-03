@@ -22,6 +22,8 @@ export JSGLR2EVALUATION_DEV=$(DEV)
 
 all: languages sources preProcessing measurements benchmarks postProcessing figures publish
 
+repeat: cleanMeasurements cleanBenchmarks measurements benchmarks postProcessing figures publish
+
 clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanFigures cleanArchive
 
 cleanAll: clean all
