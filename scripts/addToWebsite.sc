@@ -127,14 +127,17 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
         |</div>""".stripMargin
 }
 
-def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
-    (language.id, language.name, "<h3>Sources</h3>\n" + withNav(
+def batchLanguageContent(language: Language) =
+    "<h3>Sources</h3>\n" + withNav(
         (s"${language.id}-all", "All", batchSourceTabContent(language, None)) +:
         language.sourcesBatchNonEmpty.map { source =>
             // TODO add field source.name?
             (source.id, source.id, batchSourceTabContent(language, Some(source)))
         }
-    ))
+    )
+
+def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
+    (language.id, language.name, batchLanguageContent(language))
 }
 
 def batchContent =
