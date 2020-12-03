@@ -45,6 +45,9 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         }.get
     }
 
+    def measurementsParseTable(implicit suite: Suite) =
+        CSV.parse(measurementsDir / "batch" / "parsetable.csv").rows.head
+
     def benchmarksDir(implicit suite: Suite) = suite.benchmarksDir / id
 
     def sourceFilesBatch(source: Option[BatchSource] = None)(implicit suite: Suite) = ls.rec! (source match {
