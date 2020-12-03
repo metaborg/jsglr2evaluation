@@ -3,5 +3,6 @@ target/*
 scripts/.venv
 .ammonite
 .metals
+.vscode
 .RData
 .Rhistory
