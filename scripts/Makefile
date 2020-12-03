@@ -20,7 +20,7 @@ export JSGLR2EVALUATION_FIGURES_DIR=$(FIGURES_DIR)
 export JSGLR2EVALUATION_DEV=$(DEV)
 
 
-all: languages sources preProcessing $(MEASUREMENTS_JAR) measurements $(BENCHMARKS_JAR) benchmarks postProcessing figures publish
+all: languages sources preProcessing measurements benchmarks postProcessing figures publish
 
 clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanPostProcessing cleanFigures cleanArchive
 
@@ -49,7 +49,7 @@ preProcessing:
 
 
 # Perform measurements
-measurements:
+measurements: $(MEASUREMENTS_JAR)
 	amm measurements.sc
 
 $(MEASUREMENTS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.measure/src
