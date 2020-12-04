@@ -1,3 +1,13 @@
+# JSGLR2 Evaluation in Docker
+
+Requires [Docker](https://www.docker.com/get-started).
+
+Checkout this project on the machine where you want to run the evaluation:
+
+```
+git clone https://github.com/metaborg/jsglr2evaluation.git
+cd jsglr2evaluation
+```
 
 Build the image with tag `jsglr2evaluation` (not from this directory, but from the root of the repository):
 
@@ -5,15 +15,15 @@ Build the image with tag `jsglr2evaluation` (not from this directory, but from t
 docker build -f docker/Dockerfile -t jsglr2evaluation .
 ```
 
-Run the evaluation in a container:
+Run the evaluation in a container, which will use `~/jsglr2evaluation-data` on the host for persistence:
 
 ```
-docker run -d --rm -v ~/jsglr2evaluation:/jsglr2evaluation/data -e "TARGET=all" -e "EVALUATION_TARGET=all" jsglr2evaluation
+docker run -d --rm -v ~/jsglr2evaluation-data:/jsglr2evaluation/data -e "TARGET=all" -e "EVALUATION_TARGET=all" jsglr2evaluation
 ```
 
 `-d`: run container in the background
 `--rm`: removes the container when it exits
-`-v ~/jsglr2evaluation:/jsglr2evaluation/data`: use `~/jsglr2evaluation` as working directory on the host to persist data (Spoofax sources, evaluation corpus, results)
+`-v ~/jsglr2evaluation-data:/jsglr2evaluation/data`: use `~/jsglr2evaluation-data` as working directory on the host to persist data (Spoofax sources, evaluation corpus, results)
 `-e "SPOOFAX_VERSION=master"`: specify the Spoofax version
 `-e "JSGLR_VERSION=develop/jsglr2"`: specify the JSGLR version, which will be built again independently after building Spoofax completely. This enables you to run the evaluation with a JSGLR version from specific branch, without having to rebuild Spoofax completely.
 `-e "TARGET=evaluation"`: specify the target of the Make build (e.g. `all`, `spoofax`, `evaluation`)

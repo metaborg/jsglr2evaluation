@@ -1,4 +1,4 @@
-# JSGLR2 Evaluation
+# JSGLR2 Evaluation Scripts
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@
 
 ## Run
 
-Execute everything with defaults, which expects Spoofax at `~/spoofax/releng` and will use `~/jsglr2evaluation-data` as working directory:
+Execute everything with defaults, which expects the Spoofax sources at `~/spoofax/releng` and will use `~/jsglr2evaluation-data` as working directory:
 
 ```
 make all
