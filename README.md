@@ -36,9 +36,9 @@ docker run --rm -v ~/jsglr2evaluation-data:/jsglr2evaluation/data -e "TARGET=eva
 ```
 
 Add the `-it` option to run the container interactively, which allows to cancel its execution with CTRL + C.
-Otherwise, stop and remove the container by looking up the container id with `docker ps` and `docker rm -f <container-id>`.
+Alternatively, to stop execution, look up the container id with `docker ps` and stop and remove the container with `docker rm -f <container-id>`.
 
-#### Evaluation grammars
+#### Evaluating grammars
 
 For evaluating grammars, the run can be limited to `-e "EVALUATION_TARGET=languages sources preProcessing"` for only rebuilding the languages, collecting sources, and preprocessing, respectively.
 Files that do not parse unambiguously end up in the `~/jsglr2evaluation-data/sources/{invalid, timout, inconsistent, ambiguous}` directories.
