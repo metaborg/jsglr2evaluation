@@ -11,11 +11,11 @@ There are two options for running the evaluation suite:
 
 ### Make
 
-See [scripts/README.md](scripts/README/md).
+See [scripts/README.md](scripts/README.md).
 
 ### Docker
 
-See [docker/README.md](docker/README/md).
+See [docker/README.md](docker/README.md).
 
 #### Quickstart
 
@@ -27,7 +27,7 @@ docker run --rm -v ~/jsglr2evaluation-data:/jsglr2evaluation/data -e "TARGET=all
 ```
 
 As a local working directory, `~/jsglr2evaluation-data` will be used for storing Spoofax sources, languages, the corpus, and evaluation results and reports.
-The default [config](scripts/config.yaml) can be overwritten by providing a config file in the working directory, e.g. at `~/jsglr2evaluation-data/config.yaml`.
+The default [config](scripts/config.yml) can be overwritten by providing a config file in the working directory, e.g. at `~/jsglr2evaluation-data/config.yml`.
 
 For consecutive runs, only the evaluation has to be re-run (`-e "TARGET=evaluation"`):
 
