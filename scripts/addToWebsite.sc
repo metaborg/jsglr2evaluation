@@ -85,7 +85,11 @@ if (!dev) {
 mkdir! dir
 
 cp.over(pwd / "website-style.css", dir / "style.css")
-cp.over(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
+try {
+    cp.over(suite.dir / "archive.tar.gz", dir / "archive.tar.gz")
+} catch {
+    case e => if (!dev) throw e;  // Do not throw NoSuchFileException in dev mode
+}
 cp.over(figuresDir, dir / "figures")
 
 suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
