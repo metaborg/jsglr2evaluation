@@ -111,9 +111,13 @@ def plot_times(rows, parser_types):
     ax2.plot(x, y, "yo", label="Change size", markersize=3)  # clip_on=False won't work here due to custom z-order
 
     for column in parser_types:
-        x, y, y_err = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
-                            for row in rows if row[column]))
-        ax1.errorbar(x, y, y_err, fmt=COLORS[column], label=column, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+        try:
+            x, y, y_err = zip(*((int(row["i"]), float(row[column]), float(row[column + " Error (99.9%)"] or 0))
+                                for row in rows if row[column]))
+            ax1.errorbar(x, y, y_err, fmt=COLORS[column], label=column.replace("TreeSitterIncremental", "TreeSitter"),
+                         ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+        except:
+            print("    Parser type " + column + " not found")
 
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
