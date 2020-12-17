@@ -12,6 +12,8 @@ COLORS = {
     "Batch": "rs",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
+    "TreeSitterIncremental": "g2",
+    "TreeSitterIncrementalNoCache": "b1",
     "jsglr2-standard": "rs",
     "jsglr2-elkhound": "yo",
     "jsglr2-incremental": "bv",  # TODO fix color for incremental: with vs. without cache
@@ -33,7 +35,7 @@ def base_plot(plot_size, title, x_label, y_label, z_label="", subplot_kwargs=Non
 
     ax.margins(*(0.1 / x for x in plot_size))
 
-    ax.set_title(title, y=1.0 + 0.4 / float(plot_size[1]), va="bottom")
+    ax.set_title(title, y=1.0 + 0.6 / float(plot_size[1]), va="bottom")
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     if z_label:
@@ -166,6 +168,20 @@ def plot_times_vs_changes_3d(rows):
     return fig
 
 
+def parser_types(include_batch=True, include_tree_sitter=False):
+    types = []
+    if include_batch:
+        types.append("Batch")
+    types.append("Incremental")
+    if include_batch:
+        types.append("IncrementalNoCache")
+    if include_tree_sitter:
+        types.append("TreeSitterIncremental")
+        if include_batch:
+            types.append("TreeSitterIncrementalNoCache")
+    return types
+
+
 def main():
     incremental_results_dir = path.join(DATA_DIR, "results", "incremental")
 
@@ -189,8 +205,8 @@ def main():
                 makedirs(figure_path, exist_ok=True)
 
                 figures = [
-                    (plot_times(result_data, ["Batch", "Incremental", "IncrementalNoCache"]), "report"),
-                    (plot_times(result_data_except_first, ["Incremental"]), "report-except-first"),
+                    (plot_times(result_data, parser_types(True, "implode" in csv_basename)), "report"),
+                    (plot_times(result_data_except_first, parser_types(False, "implode" in csv_basename)), "report-except-first"),
                     (plot_times_vs_changes(result_data_except_first, "bytes", "Added", "Removed"),
                      "report-time-vs-bytes"),
                     (plot_times_vs_changes(result_data_except_first, "chunks", "Changes"), "report-time-vs-changes"),

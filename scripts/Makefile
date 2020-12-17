@@ -12,6 +12,7 @@ DEV?=false
 JSGLR_DIR=$(SPOOFAX_DIR)/jsglr
 MEASUREMENTS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.measure/target/org.spoofax.jsglr2.measure-2.6.0-SNAPSHOT.jar
 BENCHMARKS_JAR=$(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/target/org.spoofax.jsglr2.benchmark-2.6.0-SNAPSHOT.jar
+TREE_SITTER_JAR=$(DATA_DIR)/tools/java-tree-sitter/java-tree-sitter/target/java-tree-sitter-0.0.1-SNAPSHOT.jar
 MEMORY_BENCHMARKS_JAR=$(DATA_DIR)/tools/simple-allocation-instrumenter/target/java-allocation-instrumenter-HEAD-SNAPSHOT.jar
 
 # Environment variables passed to the Ammonite/Python/R scripts
@@ -67,12 +68,20 @@ cleanMeasurements:
 benchmarks: $(BENCHMARKS_JAR)
 	amm benchmarks.sc
 
-$(BENCHMARKS_JAR): $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
+$(BENCHMARKS_JAR): $(TREE_SITTER_JAR) $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
 	mvn -f $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark -q install
+
+# Pull custom java-tree-sitter library from https://github.com/mpsijm/java-tree-sitter
+$(TREE_SITTER_JAR):
+	if [ ! -d $(DATA_DIR)/tools/java-tree-sitter/.git ]; then git clone --recurse-submodules https://github.com/mpsijm/java-tree-sitter $(DATA_DIR)/tools/java-tree-sitter; fi
+	cd $(DATA_DIR)/tools/java-tree-sitter && \
+		git pull && \
+		mvn -q -DskipTests=true -Dmaven.javadoc.skip=true install
 
 cleanBenchmarks:
 	-rm -r $(DATA_DIR)/benchmarks
 	-rm -r $(JSGLR_DIR)/org.spoofax.jsglr2.benchmarks/target
+	-rm -rf $(DATA_DIR)/tools/java-tree-sitter
 
 
 # Performs memory benchmarks

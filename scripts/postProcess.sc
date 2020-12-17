@@ -117,6 +117,10 @@ suite.languages.foreach { language =>
                         language.antlrBenchmarks.foreach { antlrBenchmark =>
                             processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
                         }
+
+                        if (language.extension == "java") {
+                            processBenchmarkCSV(CSV.parse(benchmarksDir / "tree-sitter.csv"), _ => "tree-sitter", resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                        }
                     }
                 }
             }
@@ -153,25 +157,42 @@ suite.languages.foreach { language =>
             parserTypes.foreach { parserType =>
                 write.append(resultPath, s""","$parserType","$parserType Error (99.9%)"""")
             }
+            parserTypes.filter(_ != "Batch").foreach { parserType =>
+                write.append(resultPath, s""","TreeSitter$parserType","TreeSitter$parserType Error (99.9%)"""")
+            }
             write.append(resultPath, ""","Size (bytes)","Removed","Added","Changes"""" + "\n")
 
             val sourceDir = language.sourcesDir / "incremental" / source.id
             for (i <- 0 until (ls! sourceDir).length) {
-                val csv = try {
+                val csvJSGLR2 = try {
                     CSV.parse(language.benchmarksDir / "jsglr2incremental" / source.id / s"$i.csv")
                 } catch {
                     case _ => CSV(Seq.empty, Seq.empty)
                 }
-                val rows = csv.rows.filter(_("Param: implode") == implode.toString)
+                val csvTreeSitter = try {
+                    CSV.parse(language.benchmarksDir / "tree-sitter-incremental" / source.id / s"$i.csv")
+                } catch {
+                    case _ => CSV(Seq.empty, Seq.empty)
+                }
+
+                val rowsJSGLR2 = csvJSGLR2.rows.filter(_("Param: implode") == implode.toString)
+                val rowsTreeSitter = if (implode) csvTreeSitter.rows else Nil
 
                 write.append(resultPath, i.toString)
 
-                parserTypes.foreach { parserType => {
-                    write.append(resultPath, rows.find(_("Param: parserType") == parserType) match {
+                parserTypes.foreach { parserType =>
+                    write.append(resultPath, rowsJSGLR2.find(_("Param: parserType") == parserType) match {
                         case Some(row) => "," + row("Score") + "," + row("Score Error (99.9%)").replace("NaN", "")
                         case None => ",,"
                     })
-                }}
+                }
+
+                parserTypes.filter(_ != "Batch").foreach { parserType =>
+                    write.append(resultPath, rowsTreeSitter.find(_("Param: parserType") == parserType) match {
+                        case Some(row) => "," + row("Score") + "," + row("Score Error (99.9%)").replace("NaN", "")
+                        case None => ",,"
+                    })
+                }
 
                 val totalSize = ((ls! sourceDir / s"$i") | stat | (_.size)).sum
                 write.append(resultPath, "," + totalSize)
