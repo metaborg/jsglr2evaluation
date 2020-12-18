@@ -61,7 +61,7 @@ suite.languages.foreach { language =>
     val sampledFilesBatch = scala.util.Random.shuffle(language.sourceFilesBatch() ++ language.sourceFilesIncremental).take(numSamples)
     val sampledFilesIncremental = scala.util.Random.shuffle(incrementalSources).take(numSamples)
 
-    parsers.foreach { parser =>
+    parsers.filter(_.isInstanceOf[JSGLR2Parser]).foreach { parser =>
         timed("memoryBenchmarks " + language.id + " " + parser.id) {
             val jsglr2parser = parser.asInstanceOf[JSGLR2Parser]
 
