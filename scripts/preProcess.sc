@@ -23,8 +23,8 @@ object PreProcessing {
                     val input = read! file
                     val filename = file relativeTo language.sourcesDir
 
-                    val results: Seq[(String, ParseResult)] = parsers.map { parser =>
-                        val result = withTimeout(parser.parse(input), 10)(ParseFailure(Some("timeout"), Timeout))(e => ParseFailure(Some("failed: " + e.getMessage), Invalid))
+                    val results: Seq[(String, ParseResult)] = parsers.filter(!_.recovery).map { parser =>
+                        val result = withTimeout(parser.parse(input), 30)(ParseFailure(Some("timeout"), Timeout))(e => ParseFailure(Some("failed: " + e.getMessage), Invalid))
 
                         (parser.id, result)
                     }
@@ -87,7 +87,7 @@ object PreProcessing {
                             val previousFile = sourceDir / (version - 1).toString / (file relativeTo versionDir)
                             if (exists! previousFile) {
                                 parsers.filter({
-                                    case JSGLR2Parser(_, _, incremental) => incremental
+                                    case jsglr2Parser: JSGLR2Parser => jsglr2Parser.incremental && !jsglr2Parser.recovery
                                     case _ => false
                                 }).asInstanceOf[Seq[JSGLR2Parser]].foreach { parser =>
                                     val batch = parser.parseMulti(read! file)(0)

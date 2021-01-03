@@ -15,6 +15,7 @@ import scala.util.{Failure, Success, Try}
 trait Parser {
     def id: String
     def parse(input: String): ParseResult
+    def recovery: Boolean
 }
 
 case class JSGLR2Parser(language: Language, jsglr2Preset: JSGLR2Variant.Preset, incremental: Boolean = false) extends Parser {
@@ -23,6 +24,7 @@ case class JSGLR2Parser(language: Language, jsglr2Preset: JSGLR2Variant.Preset, 
         new ParseTableVariant(),
         jsglr2Preset.variant
     )
+    val recovery = variant.parser.recovery
     val jsglr2 = getJSGLR2(variant, language)
     def parse(input: String) = jsglr2.parseResult(input) match {
         case success: JSGLR2Success[IStrategoTerm] =>
@@ -43,6 +45,7 @@ case class JSGLR1Parser(language: Language) extends Parser {
         case Success(_) => ParseSuccess(None)
         case Failure(_) => ParseFailure(None, Invalid)
     }
+    val recovery = true
 }
 
 import $ivy.`org.antlr:antlr4-runtime:4.7.2`
@@ -71,6 +74,7 @@ case class ANTLRParser[ANTLR__Lexer <: ANTLR_Lexer, ANTLR__Parser <: ANTLR_Parse
             case e: ParseCancellationException => ParseFailure(None, Invalid)
         }
     }
+    def recovery = false
 }
 
 trait ParseResult {
@@ -95,8 +99,8 @@ object Parser {
         JSGLR2Parser(language, JSGLR2Variant.Preset.standard),
         JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound),
         JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true),
-        //JSGLR2Parser(language.parseTablePath, JSGLR2Variant.Preset.recovery),
-        //JSGLR2Parser(language.parseTablePath, JSGLR2Variant.Preset.recoveryIncremental, true),
+        JSGLR2Parser(language, JSGLR2Variant.Preset.recovery),
+        //JSGLR2Parser(language, JSGLR2Variant.Preset.recoveryIncremental, true),
     ) ++ language.antlrBenchmarks.map { benchmark =>
         benchmark.id match {
             case "antlr" =>
