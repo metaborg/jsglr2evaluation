@@ -16,6 +16,8 @@ println("Validate sources...")
 
 object PreProcessing {
 
+    val timeout = 30
+
     def run = {
         suite.languages.foreach { language =>
             println(" " + language.name)
@@ -28,7 +30,7 @@ object PreProcessing {
                     val filename = file relativeTo language.sourcesDir
 
                     val results: Seq[(String, ParseResult)] = parsers.filter(!_.recovery).map { parser =>
-                        val result = withTimeout(parser.parse(input), 30)(ParseFailure(Some("timeout"), Timeout))(e => ParseFailure(Some("failed: " + e.getMessage), Invalid))
+                        val result = withTimeout(parser.parse(input), timeout)(ParseFailure(Some("timeout"), Timeout))(e => ParseFailure(Some("failed: " + e.getMessage), Invalid))
 
                         (parser.id, result)
                     }
@@ -106,15 +108,16 @@ object PreProcessing {
                     }
                 }
 
-                val recoveringParser = parsers.find {
+                val recoveringJSGLR2 = parsers.find {
                     case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.recovery
                 }.get.asInstanceOf[JSGLR2Parser]
-                val nonRecoveringParser = parsers.find {
+                val recoveringParser = recoveringJSGLR2.jsglr2.parser()
+                val nonRecoveringJSGLR2 = parsers.find {
                     case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.standard
                 }.get.asInstanceOf[JSGLR2Parser]
 
-                def verdictWithTimeout(id: String)(body: => Option[String]): Option[String] =
-                    withTimeout(body, 30)(Some(s"timeout-$id"))(e => Some("failed"))
+                def verdictWithTimeout(id: String, timeout: Long)(body: => Option[String]): Option[String] =
+                    withTimeout(body, timeout)(Some(s"timeout-$id"))(e => Some("failed"))
 
                 language.sources.recovery.foreach { source =>
                     println(s"  Checking recovery reconstruction for ${source.id}")
@@ -126,25 +129,23 @@ object PreProcessing {
                         val filename = file relativeTo language.sourcesDir
 
                         val verdict: Option[String] =
-                            verdictWithTimeout("non-recovery")(nonRecoveringParser.parse(input) match {
+                            verdictWithTimeout("non-recovery", timeout)(nonRecoveringJSGLR2.parse(input) match {
                                 case ParseFailure(error, reason) =>
-                                    verdictWithTimeout("recovery") {
-                                        val parser = recoveringParser.jsglr2.parser()
-
-                                        parser.parse(input) match {
-                                            case success: JSGLR2ParseSuccess[_] =>
-                                                val reconstructed = Reconstruction.reconstruct(parser, success)
-
-                                                verdictWithTimeout("reconstructed")(nonRecoveringParser.parse(reconstructed.inputString) match {
-                                                    case ParseSuccess(_) => None
-                                                    case ParseFailure(_, _) => Some("reconstruction-broken")
-                                                })
-                                            case _ =>
-                                                Some("unrecovered")
-                                        }
-                                    }
+                                    None
                                 case ParseSuccess(_) =>
                                     Some("valid") // Non-recovering parsing should fail
+                            }).orElse(verdictWithTimeout("recovery", 2 * timeout) {
+                                recoveringParser.parse(input) match {
+                                    case success: JSGLR2ParseSuccess[_] =>
+                                        val reconstructed = Reconstruction.reconstruct(recoveringParser, success)
+
+                                        nonRecoveringJSGLR2.parse(reconstructed.inputString) match {
+                                            case ParseSuccess(_) => None
+                                            case ParseFailure(_, _) => Some("reconstruction-broken")
+                                        }
+                                    case _ =>
+                                        Some("unrecovered")
+                                }
                             })
 
                         verdict match {
