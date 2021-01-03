@@ -4,6 +4,10 @@ import $file.common, common._, Suite._
 import $file.spoofax, spoofax._
 import $file.parsers, parsers._
 import org.spoofax.interpreter.terms.IStrategoTerm
+import org.spoofax.jsglr2.JSGLR2Variant
+import org.spoofax.jsglr2.integration.IntegrationVariant
+import org.spoofax.jsglr2.recovery.Reconstruction
+import org.spoofax.jsglr2.parser.result.{ParseSuccess => JSGLR2ParseSuccess}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -98,6 +102,59 @@ object PreProcessing {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                val recoveringParser = parsers.find {
+                    case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.recovery
+                }.get.asInstanceOf[JSGLR2Parser]
+                val nonRecoveringParser = parsers.find {
+                    case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.standard
+                }.get.asInstanceOf[JSGLR2Parser]
+
+                def verdictWithTimeout(id: String)(body: => Option[String]): Option[String] =
+                    withTimeout(body, 30)(Some(s"timeout-$id"))(e => Some("failed"))
+
+                language.sources.recovery.foreach { source =>
+                    println(s"  Checking recovery reconstruction for ${source.id}")
+
+                    val sourceDir = language.sourcesDir / "recovery" / source.id
+
+                    language.sourceFilesRecovery().foreach { file =>
+                        val input = read! file
+                        val filename = file relativeTo language.sourcesDir
+
+                        val verdict: Option[String] =
+                            verdictWithTimeout("non-recovery")(nonRecoveringParser.parse(input) match {
+                                case ParseFailure(error, reason) =>
+                                    verdictWithTimeout("recovery") {
+                                        val parser = recoveringParser.jsglr2.parser()
+
+                                        parser.parse(input) match {
+                                            case success: JSGLR2ParseSuccess[_] =>
+                                                val reconstructed = Reconstruction.reconstruct(parser, success)
+
+                                                verdictWithTimeout("reconstructed")(nonRecoveringParser.parse(reconstructed.inputString) match {
+                                                    case ParseSuccess(_) => None
+                                                    case ParseFailure(_, _) => Some("reconstruction-broken")
+                                                })
+                                            case _ =>
+                                                Some("unrecovered")
+                                        }
+                                    }
+                                case ParseSuccess(_) =>
+                                    Some("valid") // Non-recovering parsing should fail
+                            })
+
+                        verdict match {
+                            case Some(verdict) =>
+                                println(s"   Invalid ($verdict): " + filename)
+
+                                mkdir! sourcesDir / "recovery-invalid" / verdict
+                                mv.over(file, sourcesDir / "recovery-invalid" / verdict / filename.last)
+                            case None =>
+                                println("   Valid: " + filename)
                         }
                     }
                 }

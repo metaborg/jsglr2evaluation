@@ -79,6 +79,11 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     }
 
     def sourceFilesIncremental(implicit suite: Suite) = ls.rec! sourcesDir / "incremental" |? (_.ext == extension)
+
+    def sourceFilesRecovery(source: Option[BatchSource] = None)(implicit suite: Suite) = ls.rec! (source match {
+        case Some(source) => sourcesDir / "recovery" / source.id
+        case None => sourcesDir / "recovery"
+    }) |? (_.ext == extension)
 }
 
 sealed trait ParseTable {
@@ -104,7 +109,7 @@ object ParseTable {
         Decoder[LocalParseTable].map[ParseTable](identity)
 }
 
-case class Sources(batch: Seq[BatchSource] = Seq.empty, incremental: Seq[IncrementalSource] = Seq.empty)
+case class Sources(batch: Seq[BatchSource] = Seq.empty, incremental: Seq[IncrementalSource] = Seq.empty, recovery: Seq[BatchLocalSource] = Seq.empty)
 
 sealed trait Source {
     def id: String
