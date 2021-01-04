@@ -2,10 +2,6 @@ import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 
 import $file.common, common._, Suite._
 
-def preProcess(file: String) =
-    // Replace Unicode
-    file.replaceAll("[^\\x00-\\xFF]", "?")
-
 println("Setting up sources...")
 
 mkdir! sourcesDir
@@ -80,9 +76,7 @@ suite.languages.foreach { language =>
                 val filenameFlat = source.id + "_" + pathInSource.toString.replace("/", "_").replace(".", "_")
                 val filename = filenameFlat.dropRight(1 + language.extension.size) + "." + language.extension
 
-                val preProcessed = preProcess(read! file)
-
-                write(language.sourcesDir / "batch" / source.id / filename, preProcessed)
+                cp.over(file, language.sourcesDir / "batch" / source.id / filename)
             }
         }
     }
@@ -120,9 +114,7 @@ suite.languages.foreach { language =>
                     val pathInRepo = file relativeTo languageSourceRepoDir
                     val filename = pathInRepo.toString.replace("/", "_")
 
-                    val preProcessed = preProcess(read! file)
-
-                    write(revisionPath / filename, preProcessed)
+                    cp.over(file, revisionPath / filename)
                 }
             }
         }
@@ -143,9 +135,7 @@ suite.languages.foreach { language =>
             val filenameFlat = source.id + "_" + pathInSource.toString.replace("/", "_").replace(".", "_")
             val filename = filenameFlat.dropRight(1 + language.extension.size) + "." + language.extension
 
-            val preProcessed = preProcess(read! file)
-
-            write(language.sourcesDir / "recovery" / source.id / filename, preProcessed)
+            cp.over(file, language.sourcesDir / "recovery" / source.id / filename)
         }
     }
 
