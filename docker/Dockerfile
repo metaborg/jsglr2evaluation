@@ -15,11 +15,11 @@ RUN apt-get install -y software-properties-common openjdk-8-jdk wget curl git ma
 
 # Install Maven 3
 RUN cd bin &&\
-    wget http://apache.mirror.anlx.net/maven/maven-3/3.5.4/binaries/apache-maven-3.5.4-bin.tar.gz &&\
-    tar -zxf apache-maven-3.5.4-bin.tar.gz &&\
-    cp -R apache-maven-3.5.4 /usr/local &&\
-    ln -s /usr/local/apache-maven-3.5.4/bin/mvn /usr/bin/mvn &&\
-    ln -s /usr/local/apache-maven-3.5.4/bin/mvnDebug /usr/bin/mvnDebug
+    wget http://apache.mirror.anlx.net/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz &&\
+    tar -zxf apache-maven-3.6.3-bin.tar.gz &&\
+    cp -R apache-maven-3.6.3 /usr/local &&\
+    ln -s /usr/local/apache-maven-3.6.3/bin/mvn /usr/bin/mvn &&\
+    ln -s /usr/local/apache-maven-3.6.3/bin/mvnDebug /usr/bin/mvnDebug
 
 # Local Maven settings (http://metaborg.org/dev/maven/#local-settings-file)
 RUN mkdir /root/.m2

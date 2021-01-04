@@ -20,6 +20,9 @@ savePlot <- function(plot, filename) {
   invisible(dev.off())
 }
 
-colors      <- c("#8c510a",  "#d8b365",  "#f6e8c3",     "#f5f5f5",             "#c7eae5", "#5ab4ac", "#01665e") # Color per parser variant, colorblind safe: http://colorbrewer2.org/#type=diverging&scheme=BrBG&n=6
-allVariants <- c("standard", "recovery", "incremental", "recoveryIncremental", "jsglr1",  "antlr",   "antlr-optimized")
+# Color per parser variant, colorblind safe: http://colorbrewer2.org/#type=diverging&scheme=BrBG&n=9
+colors      <- c("#8c510a",  "#bf812d",  "#dfc27d",  "#f6e8c3",     "#f5f5f5",
+                 "#c7eae5", "#80cdc1", "#35978f",         "#01665e")
+allVariants <- c("standard", "elkhound", "recovery", "incremental", "recoveryIncremental",
+                 "jsglr1",  "antlr",   "antlr-optimized", "tree-sitter")
 symbols     <- c(0,2,5,3) # Symbol per language

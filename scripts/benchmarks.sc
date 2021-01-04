@@ -57,6 +57,19 @@ suite.languages.foreach { language =>
             Map.empty
         )
 
+    def benchmarkTreeSitter(resultsPath: Path, sourcePath: Path) =
+        benchmark(
+            "TreeSitterBenchmark.benchmark",
+            resultsPath,
+            Seq(
+                s"language=${language.id}",
+                s"extension=${language.extension}",
+                s"sourcePath=${sourcePath}",
+                s"type=multiple"
+            ),
+            Map.empty
+        )
+
     def benchmarkJSGLRIncremental(name: String, resultsPath: Path, sourcePath: Path, params: Map[String, String] = Map.empty) = {
         for (i <- -1 until (ls! sourcePath).length) {
             println(f"    iteration $i%3d: start @ ${java.time.LocalDateTime.now}")
@@ -65,6 +78,28 @@ suite.languages.foreach { language =>
             } else {
                 benchmark(
                     name,
+                    resultsPath / s"$i.csv",
+                    Seq(
+                        s"language=${language.id}",
+                        s"extension=${language.extension}",
+                        s"parseTablePath=${language.parseTableTermPath}",
+                        s"sourcePath=${sourcePath}",
+                        s"iteration=${i}",
+                    ),
+                    params + ("i" -> s"$i")
+                )
+            }
+        }
+    }
+
+    def benchmarkTreeSitterIncremental(resultsPath: Path, sourcePath: Path, params: Map[String, String] = Map.empty) = {
+        for (i <- -1 until (ls! sourcePath).length) {
+            println(f"    iteration $i%3d: start @ ${java.time.LocalDateTime.now}")
+            if (i >= 0 && (ls! sourcePath / f"$i").isEmpty) {
+                println(f"      Skipped (no valid sources)")
+            } else {
+                benchmark(
+                    "TreeSitterBenchmarkIncremental.benchmark",
                     resultsPath / s"$i.csv",
                     Seq(
                         s"language=${language.id}",
@@ -113,6 +148,12 @@ suite.languages.foreach { language =>
                         benchmarkANTLR(antlrBenchmark.benchmark, reportDir / s"${antlrBenchmark.id}.csv", sourcesDir, "multiple")
                     }
                 }
+
+                if (language.extension == "java") {
+                    timed(s"benchmark [TreeSitter/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                        benchmarkTreeSitter(reportDir / s"tree-sitter.csv", sourcesDir)
+                    }
+                }
             }
         }
     }
@@ -139,6 +180,13 @@ suite.languages.foreach { language =>
         mkdir! language.benchmarksDir / "jsglr2incremental" / source.id
         timed(s"benchmark [JSGLR2/incremental] (w: $warmupIterations, i: $benchmarkIterations) ${language.id} ${source.id}") {
             benchmarkJSGLRIncremental("JSGLR2BenchmarkIncrementalExternal", language.benchmarksDir / "jsglr2incremental" / source.id, language.sourcesDir / "incremental" / source.id)
+        }
+
+        if (language.extension == "java") {
+            mkdir! language.benchmarksDir / "tree-sitter-incremental" / source.id
+            timed(s"benchmark [TreeSitter/incremental] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.id) {
+                benchmarkTreeSitterIncremental(language.benchmarksDir / "tree-sitter-incremental" / source.id, language.sourcesDir / "incremental" / source.id)
+            }
         }
     }}
 }

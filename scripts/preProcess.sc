@@ -47,7 +47,7 @@ object PreProcessing {
 
                     def consistentASTs(asts: Seq[IStrategoTerm]) = asts.map(_.toString()).distinct.size == 1
 
-                    val valid =
+                    val verdict =
                         if (failures.nonEmpty) {
                             println("   Invalid: " + filename)
                             failures.foreach { case (parser, error, _) =>
@@ -56,31 +56,29 @@ object PreProcessing {
 
                             val invalid = failures.exists(_._3 == Invalid)
                             val ambiguous = failures.exists(_._3 == Ambiguous)
-                            
-                            if (invalid) {
-                                mkdir! sourcesDir / "invalid"
-                                mv.over(file, sourcesDir / "invalid" / filename.last)
-                            } else if (ambiguous) {
-                                mkdir! sourcesDir / "ambiguous"
-                                cp.over(file, sourcesDir / "ambiguous" / filename.last)
-                            } else {
-                                mkdir! sourcesDir / "timeout"
-                                mv.over(file, sourcesDir / "timeout" / filename.last)
-                            }
 
-                            false
+                            Some(if (invalid) "invalid" else if (ambiguous) "ambiguous" else "timeout")
                         } else if (!consistentASTs(successASTs)) {
                             println("   Inconsistent: " + filename)
 
-                            mkdir! sourcesDir / "inconsistent"
-                            mv.over(file, sourcesDir / "inconsistent" / filename.last)
-
-                            false
+                            Some("inconsistent")
                         } else {
                             println("   Valid: " + filename)
 
-                            true
+                            None
                         }
+
+                    verdict match {
+                        case Some(folder) =>
+                            val destinationFile = sourcesDir / folder / file.relativeTo(sourcesDir)
+                            mkdir! destinationFile / up
+                            if (verdict == "ambiguous")
+                                // We still want to benchmark ambiguous files, but also want to be able to inspect them
+                                cp.over(file, destinationFile)
+                            else
+                                mv.over(file, destinationFile)
+                        case None =>
+                    }
                 }
 
                 language.sources.incremental.foreach { source =>
