@@ -100,6 +100,7 @@ object Parser {
         JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound),
         JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true),
         JSGLR2Parser(language, JSGLR2Variant.Preset.recovery),
+        JSGLR2Parser(language, JSGLR2Variant.Preset.recoveryElkhound),
         //JSGLR2Parser(language, JSGLR2Variant.Preset.recoveryIncremental, true),
     ) ++ language.antlrBenchmarks.map { benchmark =>
         benchmark.id match {
