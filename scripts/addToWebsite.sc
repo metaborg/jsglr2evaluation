@@ -149,16 +149,16 @@ def batchLanguageContent(language: Language) = {
         |   </div>
         |</div>
         |<h3>Sources</h3>""".stripMargin + withNav(
-        (s"${language.id}-all", "All", batchSourceTabContent(language, None)) +:
+        (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
         language.sourcesBatchNonEmpty.map { source =>
             // TODO add field source.name?
-            (source.id, source.id, batchSourceTabContent(language, Some(source)))
+            ("batch-${language.id}-${source.id}", source.id, batchSourceTabContent(language, Some(source)))
         }
     )
 }
 
 def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
-    (language.id, language.name, batchLanguageContent(language))
+    (s"batch-${language.id}", language.name, batchLanguageContent(language))
 }
 
 def batchContent =
@@ -175,11 +175,11 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
     val sourcesTabs = withNav(language.sources.incremental.map { source => {
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name?
-        (source.id, source.id, plots.map { plot =>
+        (s"incremental-${language.id}-${source.id}", source.id, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
     }})
-    (language.id, language.name,
+    (s"incremental-${language.id}", language.name,
         s"""|<div class="row">
             |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-full-garbage.svg" /></div>
             |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size.svg" /></div>
