@@ -107,11 +107,13 @@ object PreProcessing {
                 }
 
                 val recoveringJSGLR2 = parsers.find {
-                    case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.recovery
+                    case parser: JSGLR2Parser => parser.name == "recovery"
+                    case _ => false
                 }.get.asInstanceOf[JSGLR2Parser]
                 val recoveringParser = recoveringJSGLR2.jsglr2.parser()
                 val nonRecoveringJSGLR2 = parsers.find {
-                    case parser: JSGLR2Parser => parser.jsglr2Preset == JSGLR2Variant.Preset.standard
+                    case parser: JSGLR2Parser => parser.name == "standard"
+                    case _ => false
                 }.get.asInstanceOf[JSGLR2Parser]
 
                 def verdictWithTimeout(id: String, timeout: Long)(body: => Option[String]): Option[String] =
