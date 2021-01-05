@@ -293,10 +293,16 @@ def withTimeout[T](body: => T, timeout: Long)(onTimeOut: => T)(onFailure: Throwa
         def call: T = body
     })
 
-    try {
+    val res = try {
         future.get(timeout, TimeUnit.SECONDS)
     } catch {
         case _: TimeoutException => onTimeOut
         case e => onFailure(e)
     }
+
+    // Explicitly calling shutdown to prevent garbage collection of executor before future task is finished:
+    // https://bugs.openjdk.java.net/browse/JDK-8145304?focusedCommentId=13877642&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-13877642
+    executor.shutdown()
+
+    res
 }
