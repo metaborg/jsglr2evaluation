@@ -117,8 +117,12 @@ write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
 if(inScope("batch")) {
     write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurements(CSV.parse(parseTableMeasurementsPath)))
     write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurements(CSV.parse(parsingMeasurementsPath)))
-    write.over(suite.figuresDir / "benchmarks-internal-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / "internal" / "time.csv"),       Time))
-    write.over(suite.figuresDir / "benchmarks-internal-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / "internal" / "throughput.csv"), Throughput))
-    write.over(suite.figuresDir / "benchmarks-external-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / "external" / "time.csv"),       Time))
-    write.over(suite.figuresDir / "benchmarks-external-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / "external" / "throughput.csv"), Throughput))
+    Seq(
+        InternalParse,
+        Internal,
+        External
+    ).map { comparison =>
+        write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "time.csv"),       Time))
+        write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "throughput.csv"), Throughput))
+    }
 }

@@ -113,6 +113,7 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
     val elkhoundMeasurements = language.measurementsBatch(source, "elkhound")
 
     s"""|<div class="row">
+        |   <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
         |   <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
         |   <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
         |   <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
@@ -154,6 +155,7 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 
 def batchContent =
     s"""|<div class="row">
+        |   <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>
         |   <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
         |   <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
         |   <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>

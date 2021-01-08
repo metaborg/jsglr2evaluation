@@ -28,7 +28,7 @@ if (languagesWithBatchSources.nonEmpty) {
     // Setup header for benchmarks CSV
     mkdir! batchResultsDir
     
-    Seq(Internal, External).map { comparison =>
+    Seq(InternalParse, Internal, External).map { comparison =>
         mkdir! batchResultsDir / comparison.dir
         
         write.over(batchResultsDir / comparison.dir / "time.csv",       "language,variant,score,error,low,high\n")
@@ -85,16 +85,22 @@ suite.languages.foreach { language =>
         }
 
         def batchBenchmarks(comparison: Comparison, source: Option[BatchSource]) = {
+            val benchmarksSubDir =
+                if (comparison.implode)
+                    "parse+implode"
+                else
+                    "parse"
+
             val (benchmarksDir, resultsDirs) = source match {
                 case None => (
-                    language.benchmarksDir / "batch" / comparison.dir,
+                    language.benchmarksDir / "batch" / benchmarksSubDir,
                     Seq(
                         batchResultsDir / comparison.dir,
                         batchResultsDir / comparison.dir / language.id
                     )
                 )
                 case Some(source) => (
-                    language.benchmarksDir / "batch" / comparison.dir / source.id,
+                    language.benchmarksDir / "batch" / benchmarksSubDir / source.id,
                     Seq(
                         batchResultsDir / comparison.dir / language.id / source.id
                     )
@@ -106,32 +112,29 @@ suite.languages.foreach { language =>
             val normalize: BigDecimal => BigDecimal = score => characters / score
 
             resultsDirs.foreach { resultsDir =>
-                comparison match {
-                    case Internal => {
-                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                
+                if (comparison == External) {
+                    language.antlrBenchmarks.foreach { antlrBenchmark =>
+                        processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
                     }
-                    case External => {
-                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                        processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
 
-                        language.antlrBenchmarks.foreach { antlrBenchmark =>
-                            processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                        }
-
-                        if (language.extension == "java") {
-                            processBenchmarkCSV(CSV.parse(benchmarksDir / "tree-sitter.csv"), _ => "tree-sitter", resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                        }
+                    if (language.extension == "java") {
+                        processBenchmarkCSV(CSV.parse(benchmarksDir / "tree-sitter.csv"), _ => "tree-sitter", resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
                     }
                 }
             }
         }
 
-        batchBenchmarks(Internal, None)
-        batchBenchmarks(External, None)
+        batchBenchmarks(InternalParse, None)
+        batchBenchmarks(Internal,      None)
+        batchBenchmarks(External,      None)
 
         language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(Internal, Some(source))
-            batchBenchmarks(External, Some(source))
+            batchBenchmarks(InternalParse, Some(source))
+            batchBenchmarks(Internal,      Some(source))
+            batchBenchmarks(External,      Some(source))
         }
 
         // Benchmarks (batch sampled)

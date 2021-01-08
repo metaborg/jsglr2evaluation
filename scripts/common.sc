@@ -138,13 +138,24 @@ case class IncrementalSource(id: String, repo: String,
 case class ANTLRBenchmark(id: String, benchmark: String)
 
 sealed trait Comparison {
+    def name: String
     def dir: String
+    def implode: Boolean
+}
+case object InternalParse extends Comparison {
+    def name = "internal comparison, without imploding"
+    def dir = "internal-parse"
+    def implode = false
 }
 case object Internal extends Comparison {
+    def name = "internal comparison, with imploding"
     def dir = "internal"
+    def implode = true
 }
 case object External extends Comparison {
+    def name = "external comparison, with imploding"
     def dir = "external"
+    def implode = true
 }
 
 case class Suite(configPath: Path, languages: Seq[Language], dir: Path, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
