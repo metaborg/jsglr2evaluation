@@ -24,7 +24,7 @@ def latexTableTestSets(implicit suite: Suite) = {
     s.append("\\hline\n")
 
     suite.languages.foreach { language =>
-        s.append("\\multirow{" + language.sourcesBatchNonEmpty + "}{*}{" + language.name + "}\n")
+        s.append("\\multirow{" + language.sourcesBatchNonEmpty.size + "}{*}{" + language.name + "}\n")
 
         language.sourcesBatchNonEmpty.zipWithIndex.foreach { case (source, index) =>
             val files = language.sourceFilesBatch(Some(source))
