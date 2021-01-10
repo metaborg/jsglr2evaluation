@@ -45,6 +45,56 @@ def latexTableTestSets(implicit suite: Suite) = {
     s.toString
 }
 
+def latexTableParseForest(implicit suite: Suite) = {
+    val s = new StringBuilder()
+
+    s.append("\\begin{tabular}{|l|l|r|r|}\n")
+    s.append("\\hline\n")
+    s.append("Language & Node Type & Full parse forest & Optimized parse forest \\\\\n")
+    s.append("\\hline\n")
+
+    suite.languages.foreach { language =>
+        s.append("\\multirow{3}{*}{" + language.name + "}\n")
+
+        val measurementsFull      = language.measurementsBatch(None, "standard")
+        val measurementsOptimized = language.measurementsBatch(None, "optimized-pf")
+        
+        s.append("  & Context-Free & " + measurementsFull("parseNodesContextFree") + " & " + measurementsOptimized("parseNodesContextFree") + " \\\\ \\cline{2-4}\n")
+        s.append("  & Lexical      & " + measurementsFull("parseNodesLexical") +     " & " + measurementsOptimized("parseNodesLexical") +     " \\\\ \\cline{2-4}\n")
+        s.append("  & Layout       & " + measurementsFull("parseNodesLayout") +      " & " + measurementsOptimized("parseNodesLayout") +      " \\\\ \\hline\n")
+    }
+
+    s.append("\\end{tabular}\n")
+
+    s.toString
+}
+
+def latexTableDeterminism(implicit suite: Suite) = {
+    val s = new StringBuilder()
+
+    s.append("\\begin{tabular}{|l|r|r|r|}\n")
+    s.append("\\hline\n")
+    s.append("Language & LR & GLR deterministic & GLR non-deterministic \\\\\n")
+    s.append("\\hline\n")
+
+    suite.languages.foreach { language =>
+        val measurements = language.measurementsBatch(None, "elkhound")
+        val lr = measurements("doReductionsLR").toInt
+        val glrDeterministic = measurements("doReductionsDeterministicGLR").toInt
+        val glrNonDeterministic = measurements("doReductionsNonDeterministicGLR").toInt
+        val total = lr + glrDeterministic + glrNonDeterministic
+
+        def percentage(i: Int) =
+            Math.round(i.toFloat / total.toFloat * 100) + "\\%"
+
+        s.append(language.name + " & " + lr + " (" + percentage(lr) + ") & " + glrDeterministic + " (" + percentage(glrDeterministic) + ") & " + glrNonDeterministic + " (" + percentage(glrNonDeterministic) + ") \\\\ \\hline\n")
+    }
+
+    s.append("\\end{tabular}\n")
+
+    s.toString
+}
+
 def latexTableMeasurements(csv: CSV)(implicit suite: Suite) = {
     val s = new StringBuilder()
 
@@ -113,6 +163,8 @@ def latexTableBenchmarks(benchmarksCSV: CSV, benchmarkType: BenchmarkType)(impli
 mkdir! suite.figuresDir
 
 write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
+write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
+write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
 
 if(inScope("batch")) {
     write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurements(CSV.parse(parseTableMeasurementsPath)))
