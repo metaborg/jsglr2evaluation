@@ -109,8 +109,9 @@ suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
 val config = removeCommentedLines(read! suite.configPath).trim
 
 def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
-    val measurements = language.measurementsBatch(source, "standard")
-    val elkhoundMeasurements = language.measurementsBatch(source, "elkhound")
+    val measurements                     = language.measurementsBatch(source, "standard")
+    val optimizedParseForestMeasurements = language.measurementsBatch(source, "optimized-pf")
+    val elkhoundMeasurements             = language.measurementsBatch(source, "elkhound")
 
     s"""|<div class="row">
         |   <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
@@ -120,9 +121,16 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
         |</div>
         |<div class="row">
         |   <div class="col-sm">
+        |       <h3>Full parse forest</h3>
         |       <p><strong>Parse nodes context-free</strong>: ${measurements("parseNodesContextFree")}</p>
         |       <p><strong>Parse nodes lexical</strong>: ${measurements("parseNodesLexical")}</p>
         |       <p><strong>Parse nodes layout</strong>: ${measurements("parseNodesLayout")}</p>
+        |   </div>
+        |   <div class="col-sm">
+        |       <h3>Optimized parse forest</h3>
+        |       <p><strong>Parse nodes context-free</strong>: ${optimizedParseForestMeasurements("parseNodesContextFree")}</p>
+        |       <p><strong>Parse nodes lexical</strong>: ${optimizedParseForestMeasurements("parseNodesLexical")}</p>
+        |       <p><strong>Parse nodes layout</strong>: ${optimizedParseForestMeasurements("parseNodesLayout")}</p>
         |   </div>
         |   <div class="col-sm">
         |       <p><strong>Reductions LR</strong>: ${elkhoundMeasurements("doReductionsLR")}</p>
