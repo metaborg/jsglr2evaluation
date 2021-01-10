@@ -25,7 +25,7 @@ batchBenchmarksPlot <- function(inputFile, outputFile, dimension, unit, getLows,
                           ylim=c(0, 1.01 * max(getHighs(data))),
                           col=colors[match(variants, allVariants)],
                           legend=variants,
-                          args.legend=list(x=if(subtitle=="external comparison, with imploding") "topleft" else "topright"),
+                          args.legend=list(x="top"),
                           beside=TRUE)
     
     segments(barCenters, lows, barCenters, highs, lwd = 1)
