@@ -160,14 +160,6 @@ suite.languages.foreach { language =>
             batchBenchmarks(false, Some(source))
             batchBenchmarks(true,  Some(source))
         }
-
-        timed(s"benchmark [JSGLR2/batch-sampled] (w: $warmupIterations, i: $benchmarkIterations) " + language.id) {
-            mkdir ! (language.benchmarksDir / "batch-sampled")
-
-            language.sourceFilesBatchSampled.foreach { file =>
-                benchmarkJSGLR("JSGLR2BenchmarkExternal", language.benchmarksDir / "batch-sampled" / s"${file.last.toString}.csv", file, "single", Map("implode" -> "true", "variant" -> "standard"))
-            }
-        }
     }
 
     language.sources.incremental.foreach { source => {

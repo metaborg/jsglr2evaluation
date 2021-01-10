@@ -1,4 +1,4 @@
-.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks cleanBenchmarks postProcessing cleanPostProcessing figures latexTables batchPlots incrementalPlots cleanFigures publish archive cleanArchive websiteRepo addToWebsite websitePush
+.PHONY: all clean languages cleanLanguages sources cleanSources preProcessing cleanPreProcessing measurements cleanMeasurements benchmarks benchmarksBatchSampled cleanBenchmarks postProcessing cleanPostProcessing figures latexTables batchPlots incrementalPlots cleanFigures publish archive cleanArchive websiteRepo addToWebsite websitePush
 
 SHELL := /bin/bash
 
@@ -22,9 +22,9 @@ export JSGLR2EVALUATION_FIGURES_DIR=$(FIGURES_DIR)
 export JSGLR2EVALUATION_DEV=$(DEV)
 
 
-all: languages sources preProcessing measurements benchmarks memoryBenchmarks postProcessing figures publish
+all: languages sources preProcessing measurements benchmarks benchmarksBatchSampled memoryBenchmarks postProcessing figures publish
 
-repeat: cleanMeasurements cleanBenchmarks measurements benchmarks memoryBenchmarks postProcessing figures publish
+repeat: cleanMeasurements cleanBenchmarks measurements benchmarks benchmarksBatchSampled memoryBenchmarks postProcessing figures publish
 
 clean: cleanLanguages cleanSources cleanMeasurements cleanBenchmarks cleanMemoryBenchmarks cleanPostProcessing cleanFigures cleanArchive
 
@@ -67,6 +67,9 @@ cleanMeasurements:
 # Performs benchmarks
 benchmarks: $(BENCHMARKS_JAR)
 	amm benchmarks.sc
+
+benchmarksBatchSampled: $(BENCHMARKS_JAR)
+	amm benchmarksBatchSampled.sc
 
 $(BENCHMARKS_JAR): $(TREE_SITTER_JAR) $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark/src
 	mvn -f $(JSGLR_DIR)/org.spoofax.jsglr2.benchmark -q install
