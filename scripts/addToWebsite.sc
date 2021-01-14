@@ -179,20 +179,24 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
     }})
-    (s"incremental-${language.id}", language.name,
+    (s"incremental-${language.id}", language.name, sourcesTabs)
+}
+
+val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
+    (s"memory-${language.id}", language.name,
         s"""|<div class="row">
             |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-full-garbage.svg" /></div>
             |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size.svg" /></div>
             |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-incremental.svg" /></div>
-            |</div>
-            |${sourcesTabs}""")
+            |</div>""".stripMargin)
 }
 
 val tabs = Seq(
     ("batch", "Batch",
         if (exists! dir / "figures" / "batch" / "external" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else "")
+    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else ""),
+    ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav(memoryTabs) else ""),
 )
 
 write.over(
