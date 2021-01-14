@@ -10,16 +10,19 @@ def indent(spaces: Int, str: String) = str.replaceAll("\n", s"\n${" " * spaces}"
 
 def withNav(tabs: Seq[(String, String, String)]) = {
     val active = tabs.filter(_._3 != "").headOption.map(_._1).getOrElse("")
+
     val tabHeaders = tabs.map { case (id, name, content) =>
         s"""|<li class="nav-item" role="presentation">
             |  <a class="nav-link${if (id == active) " active" else ""}${if (content == "") " disabled" else ""}" id="$id-tab" data-toggle="tab" href="#$id" role="tab" aria-controls="$id" aria-selected="${if(id == active) "true" else "false"}">$name</a>
             |</li>""".stripMargin
     }.mkString("\n")
+
     val tabContent = tabs.filter(_._3 != "").map { case (id, _, content) =>
         s"""|<div class="tab-pane fade${if (id == active) " show active" else ""}" id="$id" role="tabpanel" aria-labelledby="$id-tab">
             |  ${indent(2, content)}
             |</div>""".stripMargin
     }.mkString("\n")
+
     s"""|<ul class="nav nav-tabs" role="tablist">
         |  ${indent(2, tabHeaders)}
         |</ul>
@@ -45,7 +48,12 @@ def withTemplate(title: String, config: String, content: String) =
         |        <p><a href="../index.html">&larr; Back to index</a></p>
         |        <h1>$id</h1>
         |        <p><a href="./archive.tar.gz" class="btn btn-primary">Download Archive</a></p>
-        |        <pre>$config</pre>
+        |        <details>
+        |          <summary>Contents of <code>config.yml</code></summary>
+        |          <pre>
+        |$config
+        |          </pre>
+        |        </details>
         |        <br />
         |        ${indent(8, content)}
         |      </div>
