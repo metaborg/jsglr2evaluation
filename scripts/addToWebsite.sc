@@ -114,47 +114,47 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
     val elkhoundMeasurements             = language.measurementsBatch(source, "elkhound")
 
     s"""|<div class="row">
-        |   <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |   <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |   <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |   <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
+        |  <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |  <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |  <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+        |  <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
         |</div>
         |<div class="row">
-        |   <div class="col-sm">
-        |       <h3>Full parse forest</h3>
-        |       <p><strong>Parse nodes context-free</strong>: ${measurements("parseNodesContextFree")}</p>
-        |       <p><strong>Parse nodes lexical</strong>: ${measurements("parseNodesLexical")}</p>
-        |       <p><strong>Parse nodes layout</strong>: ${measurements("parseNodesLayout")}</p>
-        |   </div>
-        |   <div class="col-sm">
-        |       <h3>Optimized parse forest</h3>
-        |       <p><strong>Parse nodes context-free</strong>: ${optimizedParseForestMeasurements("parseNodesContextFree")}</p>
-        |       <p><strong>Parse nodes lexical</strong>: ${optimizedParseForestMeasurements("parseNodesLexical")}</p>
-        |       <p><strong>Parse nodes layout</strong>: ${optimizedParseForestMeasurements("parseNodesLayout")}</p>
-        |   </div>
-        |   <div class="col-sm">
-        |       <p><strong>Reductions LR</strong>: ${elkhoundMeasurements("doReductionsLR")}</p>
-        |       <p><strong>Reductions GLR (deterministic)</strong>: ${elkhoundMeasurements("doReductionsDeterministicGLR")}</p>
-        |       <p><strong>Reductions GLR (non-deterministic)</strong>: ${elkhoundMeasurements("doReductionsNonDeterministicGLR")}</p>
-        |   </div>
+        |  <div class="col-sm">
+        |    <h3>Full parse forest</h3>
+        |    <p><strong>Parse nodes context-free</strong>: ${measurements("parseNodesContextFree")}</p>
+        |    <p><strong>Parse nodes lexical</strong>: ${measurements("parseNodesLexical")}</p>
+        |    <p><strong>Parse nodes layout</strong>: ${measurements("parseNodesLayout")}</p>
+        |  </div>
+        |  <div class="col-sm">
+        |    <h3>Optimized parse forest</h3>
+        |    <p><strong>Parse nodes context-free</strong>: ${optimizedParseForestMeasurements("parseNodesContextFree")}</p>
+        |    <p><strong>Parse nodes lexical</strong>: ${optimizedParseForestMeasurements("parseNodesLexical")}</p>
+        |    <p><strong>Parse nodes layout</strong>: ${optimizedParseForestMeasurements("parseNodesLayout")}</p>
+        |  </div>
+        |  <div class="col-sm">
+        |    <p><strong>Reductions LR</strong>: ${elkhoundMeasurements("doReductionsLR")}</p>
+        |    <p><strong>Reductions GLR (deterministic)</strong>: ${elkhoundMeasurements("doReductionsDeterministicGLR")}</p>
+        |    <p><strong>Reductions GLR (non-deterministic)</strong>: ${elkhoundMeasurements("doReductionsNonDeterministicGLR")}</p>
+        |  </div>
         |</div>""".stripMargin
 }
 
 def batchLanguageContent(language: Language) = {
     val parseTableMeasurements = language.measurementsParseTable
+    val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
+        language.sourcesBatchNonEmpty.map { source =>
+            // TODO add field source.name to use in tab title?
+            (s"batch-${language.id}-${source.id}", source.id, batchSourceTabContent(language, Some(source)))
+        }
 
     s"""|<div class="row">
-        |   <div class="col-sm">
-        |       <p><strong>States</strong>: ${parseTableMeasurements("states")}</p>
-        |   </div>
+        |  <div class="col-sm">
+        |    <p><strong>Parse Table States</strong>: ${parseTableMeasurements("states")}</p>
+        |  </div>
         |</div>
-        |<h3>Sources</h3>""".stripMargin + withNav(
-        (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
-        language.sourcesBatchNonEmpty.map { source =>
-            // TODO add field source.name?
-            ("batch-${language.id}-${source.id}", source.id, batchSourceTabContent(language, Some(source)))
-        }
-    )
+        |<h3>Sources</h3>
+        |${withNav(sourcesTabs)}""".stripMargin
 }
 
 def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
@@ -163,10 +163,10 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 
 def batchContent =
     s"""|<div class="row">
-        |   <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>
-        |   <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
-        |   <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
-        |   <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
+        |  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>
+        |  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
+        |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
+        |  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
         |</div>
         |<h2>Per Language</h2>
         |${withNav(batchTabs)}""".stripMargin
@@ -174,7 +174,7 @@ def batchContent =
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     val sourcesTabs = withNav(language.sources.incremental.map { source => {
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
-        // TODO add field source.name?
+        // TODO add field source.name to use in tab title?
         (s"incremental-${language.id}-${source.id}", source.id, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
