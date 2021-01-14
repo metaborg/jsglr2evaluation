@@ -8,7 +8,7 @@ println("Adding to website...")
 
 def indent(spaces: Int, str: String) = str.replaceAll("\n", s"\n${" " * spaces}")
 
-def withNav(tabs: Seq[(String, String, String)]) = {
+def withNav(title: String, tabs: Seq[(String, String, String)]) = {
     val active = tabs.filter(_._3 != "").headOption.map(_._1).getOrElse("")
 
     val tabHeaders = tabs.map { case (id, name, content) =>
@@ -23,7 +23,8 @@ def withNav(tabs: Seq[(String, String, String)]) = {
             |</div>""".stripMargin
     }.mkString("\n")
 
-    s"""|<ul class="nav nav-tabs" role="tablist">
+    s"""|${title}
+        |<ul class="nav nav-tabs" role="tablist">
         |  ${indent(2, tabHeaders)}
         |</ul>
         |<div class="tab-content">
@@ -161,8 +162,7 @@ def batchLanguageContent(language: Language) = {
         |    <p><strong>Parse Table States</strong>: ${parseTableMeasurements("states")}</p>
         |  </div>
         |</div>
-        |<h3>Sources</h3>
-        |${withNav(sourcesTabs)}""".stripMargin
+        |${withNav("<h3>Sources</h3>", sourcesTabs)}""".stripMargin
 }
 
 def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
@@ -176,18 +176,18 @@ def batchContent =
         |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
         |  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
         |</div>
-        |<h2>Per Language</h2>
-        |${withNav(batchTabs)}""".stripMargin
+        |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
-    val sourcesTabs = withNav(language.sources.incremental.map { source => {
+    val sourcesTabs = language.sources.incremental.map { source =>
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
         // TODO add field source.name to use in tab title?
         (s"incremental-${language.id}-${source.id}", source.id, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
-    }})
-    (s"incremental-${language.id}", language.name, sourcesTabs)
+    }
+
+    (s"incremental-${language.id}", language.name, withNav("<h3>Sources</h3>", sourcesTabs))
 }
 
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
@@ -203,14 +203,14 @@ val tabs = Seq(
     ("batch", "Batch",
         if (exists! dir / "figures" / "batch" / "external" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav(incrementalTabs) else ""),
-    ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav(memoryTabs) else ""),
+    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav("<h2>Per Language</h2>", incrementalTabs) else ""),
+    ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav("<h2>Per Language</h2>", memoryTabs) else ""),
 )
 
 write.over(
     dir / "index.html",
     withTemplate(id, config,
         s"""|<p><strong>Iterations:</strong> ${suite.warmupIterations}/${suite.benchmarkIterations}</p>
-            |${withNav(tabs)}""".stripMargin
+            |${withNav("", tabs)}""".stripMargin
     )
 )
