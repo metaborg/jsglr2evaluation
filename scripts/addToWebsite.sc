@@ -193,9 +193,10 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
     (s"memory-${language.id}", language.name,
         s"""|<div class="row">
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-full-garbage.svg" /></div>
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size.svg" /></div>
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-incremental.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-allocations-batch.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size-batch.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-allocations-incremental.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size-incremental.svg" /></div>
             |</div>""".stripMargin)
 }
 
