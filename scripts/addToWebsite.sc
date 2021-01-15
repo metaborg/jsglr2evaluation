@@ -153,8 +153,7 @@ def batchLanguageContent(language: Language) = {
     val parseTableMeasurements = language.measurementsParseTable
     val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
         language.sourcesBatchNonEmpty.map { source =>
-            // TODO add field source.name to use in tab title?
-            (s"batch-${language.id}-${source.id}", source.id, batchSourceTabContent(language, Some(source)))
+            (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source)))
         }
 
     s"""|<div class="row">
@@ -181,8 +180,7 @@ def batchContent =
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     val sourcesTabs = language.sources.incremental.map { source =>
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
-        // TODO add field source.name to use in tab title?
-        (s"incremental-${language.id}-${source.id}", source.id, plots.map { plot =>
+        (s"incremental-${language.id}-${source.id}", source.getName, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
     }

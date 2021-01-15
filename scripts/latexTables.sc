@@ -32,7 +32,7 @@ def latexTableTestSets(implicit suite: Suite) = {
             val lines = files | read.lines | (_.size) sum
             val size = files | stat | (_.size) sum
 
-            s"  & ${source.id} & ${files.size} & $lines & $size \\\\"
+            s"  & ${source.getName} & ${files.size} & $lines & $size \\\\"
         }
 
         s"""|\\multirow{${language.sourcesBatchNonEmpty.size}}{*}{${language.name}}
@@ -60,7 +60,7 @@ def latexTableTestSetsIncremental(implicit suite: Suite) = {
             val values = Iterator(files, lines, size, (size zip files) map { case (s, f) => s / f })
                 .map(v => thousandSeparator(mean(v).toString))
 
-            s"  & ${source.id} & ${versions.size} & ${values.mkString(" & ")} \\\\"
+            s"  & ${source.getName} & ${versions.size} & ${values.mkString(" & ")} \\\\"
         }
 
         s"""|\\multirow{${sources.size}}{*}{${language.name}}

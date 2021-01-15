@@ -114,6 +114,7 @@ case class Sources(batch: Seq[BatchSource] = Seq.empty, incremental: Seq[Increme
 
 sealed trait Source {
     def id: String
+    def getName: String
 }
 sealed trait RepoSource extends Source {
     def repo: String
@@ -123,8 +124,12 @@ sealed trait LocalSource extends Source {
 }
 
 sealed trait BatchSource extends Source
-case class BatchRepoSource(id: String, repo: String) extends BatchSource with RepoSource
-case class BatchLocalSource(id: String, path: String) extends BatchSource with LocalSource
+case class BatchRepoSource(id: String, repo: String, name: String = "") extends BatchSource with RepoSource {
+    def getName = if (name == "") id else name
+}
+case class BatchLocalSource(id: String, path: String, name: String = "") extends BatchSource with LocalSource {
+    def getName = if (name == "") id else name
+}
 
 object BatchSource {
     implicit val decodeBatchSource: Decoder[BatchSource] =
@@ -132,8 +137,10 @@ object BatchSource {
         Decoder[BatchLocalSource].map[BatchSource](identity)
 }
 
-case class IncrementalSource(id: String, repo: String,
-        fetchOptions: Seq[String] = Seq.empty, files: Seq[String] = Seq.empty, versions: Int = -1) extends RepoSource
+case class IncrementalSource(id: String, repo: String, name: String = "",
+        fetchOptions: Seq[String] = Seq.empty, files: Seq[String] = Seq.empty, versions: Int = -1) extends RepoSource {
+    def getName = if (name == "") id else name
+}
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 
