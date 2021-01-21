@@ -26,8 +26,6 @@ println("Executing memory benchmarks...")
 suite.languages.foreach { language =>
     println(" " + language.name)
 
-    val parsers = Parser.variants(language)
-
     val warmupIterations = suite.warmupIterations
     val benchmarkIterations = suite.benchmarkIterations
 
@@ -61,7 +59,7 @@ suite.languages.foreach { language =>
     val sampledFilesBatch = scala.util.Random.shuffle(language.sourceFilesBatch() ++ language.sourceFilesIncremental).take(numSamples)
     val sampledFilesIncremental = scala.util.Random.shuffle(incrementalSources).take(numSamples)
 
-    parsers.filter(_.isInstanceOf[JSGLR2Parser]).foreach { parser =>
+    Parser.jsglr2variants(language).foreach { parser =>
         timed("memoryBenchmarks " + language.id + " " + parser.id) {
             val jsglr2parser = parser.asInstanceOf[JSGLR2Parser]
 

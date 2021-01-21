@@ -13,7 +13,15 @@ import java.io.{FileInputStream, InputStream}
 // This allows default arguments in ADTs: https://stackoverflow.com/a/47644276
 implicit val customConfig: Configuration = Configuration.default.withDefaults
 
-case class Config(warmupIterations: Int = 1, benchmarkIterations: Int = 1, batchSamples: Int = 1, shrinkBatchSources: Option[Int] = None, languages: Seq[Language], jsglr2variants: Seq[String] = Seq("standard","elkhound","recovery","incremental","recoveryIncremental"))
+case class Config(
+    warmupIterations: Int = 1,
+    benchmarkIterations: Int = 1,
+    batchSamples: Int = 1,
+    shrinkBatchSources: Option[Int] = None,
+    jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "incremental"),
+    //jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "recoveryElkhound", "incremental", "recoveryIncremental"),
+    languages: Seq[Language],
+)
 
 case class Language(id: String, name: String, extension: String, parseTable: ParseTable, sources: Sources, antlrBenchmarks: Seq[ANTLRBenchmark] = Seq.empty) {
     def parseTableStream(implicit suite: Suite) = parseTable match {
