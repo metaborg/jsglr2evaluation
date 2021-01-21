@@ -17,7 +17,28 @@ COLORS = {
     "TreeSitterIncrementalNoCache": "b1",
 }
 
+LABELS = {
+    "jsglr2-standard": "Batch",
+    "jsglr2-elkhound": "Elkhound",
+    "jsglr2-incremental": "IncrementalNoCache"
+}
+
 MiB = 1024 * 1024
+
+
+def convert_label(label, incremental=False):
+    """
+    JSGLR2BenchmarkIncrementalExternal uses enum labels to identify parsers, which are used in the COLORS dictionary.
+    In contrast, the Ammonite scripts use jsglr2-<variant> to identify parsers.
+    This function maps the latter to the former, if possible, and else returns some default values.
+    This function returns a tuple (label, fmt).
+    """
+    if label in LABELS:
+        new_label = LABELS[label]
+        if incremental:
+            new_label = new_label.replace("NoCache", "")
+        return new_label, COLORS[new_label]
+    return label, "o"
 
 
 def read_csv(p):
@@ -56,8 +77,7 @@ def plot_memory_batch(rows, garbage):
 
     parsers = list(set(row["Parser"] for row in rows))
     for parser in parsers:
-        label = {"jsglr2-standard": "Batch", "jsglr2-elkhound": "Elkhound", "jsglr2-incremental": "IncrementalNoCache"}[parser]
-        fmt = COLORS[label]
+        label, fmt = convert_label(parser)
         x, y, y_err = zip(*((int(row["Size"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
                             for row in rows if row["Parser"] == parser and row[memoryColumn]))
         ax.errorbar(x, y, y_err, fmt=fmt, label=label, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
@@ -82,8 +102,7 @@ def plot_memory_incremental(rows, garbage):
     parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
     min_y = 0
     for parser in parsers:
-        fmt = "g^"
-        label = "Incremental"
+        label, fmt = convert_label(parser, True)
         memoryColumn = f"Memory ({garbage}. garbage)"
         memoryErrorColumn = f"Error {garbage}."
 
