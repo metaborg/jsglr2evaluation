@@ -5,13 +5,19 @@ WORKDIR /jsglr2evaluation
 RUN mkdir /jsglr2evaluation/bin
 RUN mkdir /jsglr2evaluation/data
 
-RUN apt-get update
-
 # Run apt-get without interactive dialogue
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
-RUN apt-get install -y software-properties-common openjdk-8-jdk wget curl git make python3-venv vim
+RUN apt-get update && apt-get install -y \
+    curl git locales make software-properties-common vim wget \
+    openjdk-8-jdk python3-venv
+
+# Set the locale to UTF-8 (http://jaredmarkell.com/docker-and-locales/)
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 # Install Maven 3
 RUN cd bin &&\
@@ -32,8 +38,7 @@ ENV COURSIER_CACHE /jsglr2evaluation/data/coursier-cache
 # Install R
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
-RUN apt-get update
-RUN apt-get -y install r-base
+RUN apt-get update && apt-get -y install r-base
 
 # Git config
 RUN git config --global user.name "JSGLR2 Evaluation"

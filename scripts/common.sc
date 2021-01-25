@@ -13,7 +13,15 @@ import java.io.{FileInputStream, InputStream}
 // This allows default arguments in ADTs: https://stackoverflow.com/a/47644276
 implicit val customConfig: Configuration = Configuration.default.withDefaults
 
-case class Config(warmupIterations: Int = 1, benchmarkIterations: Int = 1, batchSamples: Int = 1, shrinkBatchSources: Option[Int] = None, languages: Seq[Language], jsglr2variants: Seq[String] = Seq("standard","elkhound","recovery","incremental","recoveryIncremental"))
+case class Config(
+    warmupIterations: Int = 1,
+    benchmarkIterations: Int = 1,
+    batchSamples: Int = 1,
+    shrinkBatchSources: Option[Int] = None,
+    jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "incremental"),
+    //jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "recoveryElkhound", "incremental", "recoveryIncremental"),
+    languages: Seq[Language],
+)
 
 case class Language(id: String, name: String, extension: String, parseTable: ParseTable, sources: Sources, antlrBenchmarks: Seq[ANTLRBenchmark] = Seq.empty) {
     def parseTableStream(implicit suite: Suite) = parseTable match {
@@ -114,6 +122,7 @@ case class Sources(batch: Seq[BatchSource] = Seq.empty, incremental: Seq[Increme
 
 sealed trait Source {
     def id: String
+    def getName: String
 }
 sealed trait RepoSource extends Source {
     def repo: String
@@ -123,8 +132,12 @@ sealed trait LocalSource extends Source {
 }
 
 sealed trait BatchSource extends Source
-case class BatchRepoSource(id: String, repo: String) extends BatchSource with RepoSource
-case class BatchLocalSource(id: String, path: String) extends BatchSource with LocalSource
+case class BatchRepoSource(id: String, repo: String, name: String = "") extends BatchSource with RepoSource {
+    def getName = if (name == "") id else name
+}
+case class BatchLocalSource(id: String, path: String, name: String = "") extends BatchSource with LocalSource {
+    def getName = if (name == "") id else name
+}
 
 object BatchSource {
     implicit val decodeBatchSource: Decoder[BatchSource] =
@@ -132,8 +145,10 @@ object BatchSource {
         Decoder[BatchLocalSource].map[BatchSource](identity)
 }
 
-case class IncrementalSource(id: String, repo: String,
-        fetchOptions: Seq[String] = Seq.empty, files: Seq[String] = Seq.empty, versions: Int = -1) extends RepoSource
+case class IncrementalSource(id: String, repo: String, name: String = "",
+        fetchOptions: Seq[String] = Seq.empty, files: Seq[String] = Seq.empty, versions: Int = -1) extends RepoSource {
+    def getName = if (name == "") id else name
+}
 
 case class ANTLRBenchmark(id: String, benchmark: String)
 

@@ -10,16 +10,35 @@ FIGURES_DIR = environ["JSGLR2EVALUATION_FIGURES_DIR"]
 
 COLORS = {
     "Batch": "rs",
+    "Elkhound": "pm",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
     "TreeSitterIncremental": "g2",
     "TreeSitterIncrementalNoCache": "b1",
-    "jsglr2-standard": "rs",
-    "jsglr2-elkhound": "yo",
-    "jsglr2-incremental": "bv",  # TODO fix color for incremental: with vs. without cache
+}
+
+LABELS = {
+    "jsglr2-standard": "Batch",
+    "jsglr2-elkhound": "Elkhound",
+    "jsglr2-incremental": "IncrementalNoCache"
 }
 
 MiB = 1024 * 1024
+
+
+def convert_label(label, incremental=False):
+    """
+    JSGLR2BenchmarkIncrementalExternal uses enum labels to identify parsers, which are used in the COLORS dictionary.
+    In contrast, the Ammonite scripts use jsglr2-<variant> to identify parsers.
+    This function maps the latter to the former, if possible, and else returns some default values.
+    This function returns a tuple (label, fmt).
+    """
+    if label in LABELS:
+        new_label = LABELS[label]
+        if incremental:
+            new_label = new_label.replace("NoCache", "")
+        return new_label, COLORS[new_label]
+    return label, "o"
 
 
 def read_csv(p):
@@ -52,14 +71,16 @@ def plot_memory_batch(rows, garbage):
     memoryErrorColumn = f"Error {garbage}."
 
     plot_size = (8, 6)
-    title = "Memory usage during parsing in batch mode" if garbage == "incl" else "Memory increase of cache after first parse"
+    title = "Memory allocations during parsing in batch mode" if garbage == "incl" else \
+            "Memory size of cache after parsing a file for the first time"
     fig, ax = base_plot(plot_size, title, "File size (bytes)", "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows))
     for parser in parsers:
+        label, fmt = convert_label(parser)
         x, y, y_err = zip(*((int(row["Size"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
                             for row in rows if row["Parser"] == parser and row[memoryColumn]))
-        ax.errorbar(x, y, y_err, fmt=COLORS[parser], label=parser, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+        ax.errorbar(x, y, y_err, fmt=fmt, label=label, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
 
     ax.set_xlim(0)
     ax.set_ylim(0)
@@ -70,24 +91,30 @@ def plot_memory_batch(rows, garbage):
     return fig
 
 
-def plot_memory_incremental(rows):
+def plot_memory_incremental(rows, garbage):
     plot_size = (8, 6)
-    fig, ax = base_plot(plot_size, "Memory usage in incremental mode", "Change size (bytes)", "Memory (MiB)")
+    title = "Memory allocations during parsing in incremental mode"
+    title = "Memory allocations during parsing in incremental mode" if garbage == "incl" else \
+            "Increase of memory size of cache after incrementally parsing a file"
+    x_label = f"Change size (added {'+' if garbage == 'incl' else '-'} removed bytes)"
+    fig, ax = base_plot(plot_size, title, x_label, "Memory (MiB)")
 
     parsers = list(set(row["Parser"] for row in rows if "incremental" in row["Parser"]))
+    min_y = 0
     for parser in parsers:
-        for garbage in ["incl", "excl"]:
-            color = "bv" if garbage == "incl" else "b^"
-            label = "During parsing" if garbage == "incl" else "Cache increase"
-            memoryColumn = f"Memory ({garbage}. garbage)"
-            memoryErrorColumn = f"Error {garbage}."
+        label, fmt = convert_label(parser, True)
+        memoryColumn = f"Memory ({garbage}. garbage)"
+        memoryErrorColumn = f"Error {garbage}."
 
-            x, y, y_err = zip(*((int(row["Added"]) + int(row["Removed"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
-                                for row in rows if row["Parser"] == parser and row[memoryColumn]))
-            ax.errorbar(x, y, y_err, fmt=color, label=label, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
+        x, y, y_err = zip(*((int(row["Added"]) + int(row["Removed"]) if garbage == "incl" else int(row["Added"]) - int(row["Removed"]), float(row[memoryColumn]) / MiB, float(row[memoryErrorColumn] or 0) / MiB)
+                            for row in rows if row["Parser"] == parser and row[memoryColumn]))
+        ax.errorbar(x, y, y_err, fmt=fmt, label=label, ecolor="k", elinewidth=1, capsize=2, barsabove=True, clip_on=False)
 
-    ax.set_xlim(0)
-    ax.set_ylim(0)
+        min_y = min(min_y, *y)
+
+    if garbage == "incl":
+        ax.set_xlim(0)
+    ax.set_ylim(0 if garbage == "incl" else min_y)
 
     ax.legend(*ax.get_legend_handles_labels(), loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
 
@@ -237,9 +264,10 @@ def main():
             makedirs(figure_path, exist_ok=True)
 
             figures = [
-                (plot_memory_batch(result_data_batch, "incl"), "report-full-garbage"),
-                (plot_memory_batch(result_data_batch, "excl"), "report-cache-size"),
-                (plot_memory_incremental(result_data_incremental), "report-incremental"),
+                (plot_memory_batch(result_data_batch, "incl"), "report-allocations-batch"),
+                (plot_memory_batch(result_data_batch, "excl"), "report-cache-size-batch"),
+                (plot_memory_incremental(result_data_incremental, "incl"), "report-allocations-incremental"),
+                (plot_memory_incremental(result_data_incremental, "excl"), "report-cache-size-incremental"),
             ]
 
             for fig, name in figures:

@@ -81,24 +81,28 @@ object PreProcessing {
                     }
                 }
 
-                language.sources.incremental.foreach { source =>
-                    println(s"  Checking incremental correctness for ${source.id}")
-                    val sourceDir = language.sourcesDir / "incremental" / source.id
-                    val versions = (ls! sourceDir).map(path => (path relativeTo sourceDir).toString.toInt).sorted
-                    versions.foreach { version =>
-                        val versionDir = sourceDir / version.toString
-                        (ls! versionDir).foreach { file =>
-                            val previousFile = sourceDir / (version - 1).toString / (file relativeTo versionDir)
-                            if (exists! previousFile) {
-                                parsers.filter({
-                                    case jsglr2Parser: JSGLR2Parser => jsglr2Parser.incremental && !jsglr2Parser.recovery
-                                    case _ => false
-                                }).asInstanceOf[Seq[JSGLR2Parser]].foreach { parser =>
-                                    val batch = parser.parseMulti(read! file)(0)
-                                    val incremental = parser.parseMulti(read! previousFile, read! file)(1)
-                                    if (batch.toString() != incremental.toString()) {
-                                        println("   AST of " + file + " differs between batch and incremental!")
-                                        exit(1)
+                // TODO at some point, the recoveryIncremental parser should also work
+                val incrementalParsers = parsers.filter({
+                    case jsglr2Parser: JSGLR2Parser => jsglr2Parser.incremental && !jsglr2Parser.recovery
+                    case _ => false
+                }).asInstanceOf[Seq[JSGLR2Parser]]
+                if (incrementalParsers.nonEmpty) {
+                    language.sources.incremental.foreach { source =>
+                        println(s"  Checking incremental correctness for ${source.id}")
+                        val sourceDir = language.sourcesDir / "incremental" / source.id
+                        val versions = (ls! sourceDir).map(path => (path relativeTo sourceDir).toString.toInt).sorted
+                        versions.foreach { version =>
+                            val versionDir = sourceDir / version.toString
+                            (ls! versionDir).foreach { file =>
+                                val previousFile = sourceDir / (version - 1).toString / (file relativeTo versionDir)
+                                if (exists! previousFile) {
+                                    incrementalParsers.foreach { parser =>
+                                        val batch = parser.parseMulti(read! file)(0)
+                                        val incremental = parser.parseMulti(read! previousFile, read! file)(1)
+                                        if (batch.toString() != incremental.toString()) {
+                                            println("   AST of " + file + " differs between batch and incremental!")
+                                            exit(1)
+                                        }
                                     }
                                 }
                             }
@@ -106,56 +110,58 @@ object PreProcessing {
                     }
                 }
 
-                val recoveringJSGLR2 = parsers.find {
-                    case parser: JSGLR2Parser => parser.name == "recovery"
-                    case _ => false
-                }.get.asInstanceOf[JSGLR2Parser]
-                val recoveringParser = recoveringJSGLR2.jsglr2.parser()
-                val nonRecoveringJSGLR2 = parsers.find {
-                    case parser: JSGLR2Parser => parser.name == "standard"
-                    case _ => false
-                }.get.asInstanceOf[JSGLR2Parser]
+                if (suite.jsglr2variants.contains("recovery")) {
+                    val recoveringJSGLR2 = parsers.find {
+                        case parser: JSGLR2Parser => parser.name == "recovery"
+                        case _ => false
+                    }.get.asInstanceOf[JSGLR2Parser]
+                    val recoveringParser = recoveringJSGLR2.jsglr2.parser()
+                    val nonRecoveringJSGLR2 = parsers.find {
+                        case parser: JSGLR2Parser => parser.name == "standard"
+                        case _ => false
+                    }.get.asInstanceOf[JSGLR2Parser]
 
-                def verdictWithTimeout(id: String, timeout: Long)(body: => Option[String]): Option[String] =
-                    withTimeout(body, timeout)(Some(s"timeout-$id"))(e => Some("failed"))
+                    def verdictWithTimeout(id: String, timeout: Long)(body: => Option[String]): Option[String] =
+                        withTimeout(body, timeout)(Some(s"timeout-$id"))(e => Some("failed"))
 
-                language.sources.recovery.foreach { source =>
-                    println(s"  Checking recovery reconstruction for ${source.id}")
+                    language.sources.recovery.foreach { source =>
+                        println(s"  Checking recovery reconstruction for ${source.id}")
 
-                    val sourceDir = language.sourcesDir / "recovery" / source.id
+                        val sourceDir = language.sourcesDir / "recovery" / source.id
 
-                    language.sourceFilesRecovery().foreach { file =>
-                        val input = read! file
-                        val filename = file relativeTo language.sourcesDir
+                        language.sourceFilesRecovery().foreach { file =>
+                            val input = read! file
+                            val filename = file relativeTo language.sourcesDir
 
-                        val verdict: Option[String] =
-                            verdictWithTimeout("non-recovery", timeout)(nonRecoveringJSGLR2.parse(input) match {
-                                case ParseFailure(error, reason) =>
-                                    None
-                                case ParseSuccess(_) =>
-                                    Some("valid") // Non-recovering parsing should fail
-                            }).orElse(verdictWithTimeout("recovery", 2 * timeout) {
-                                recoveringParser.parse(input) match {
-                                    case success: JSGLR2ParseSuccess[_] =>
-                                        val reconstructed = Reconstruction.reconstruct(recoveringParser, success)
+                            val verdict: Option[String] =
+                                verdictWithTimeout("non-recovery", timeout)(nonRecoveringJSGLR2.parse(input) match {
+                                    case ParseFailure(error, reason) =>
+                                        None
+                                    case ParseSuccess(_) =>
+                                        Some("valid") // Non-recovering parsing should fail
+                                }).orElse(verdictWithTimeout("recovery", 2 * timeout) {
+                                    recoveringParser.parse(input) match {
+                                        case success: JSGLR2ParseSuccess[_] =>
+                                            val reconstructed = Reconstruction.reconstruct(recoveringParser, success)
 
-                                        nonRecoveringJSGLR2.parse(reconstructed.inputString) match {
-                                            case ParseSuccess(_) => None
-                                            case ParseFailure(_, _) => Some("reconstruction-broken")
-                                        }
-                                    case _ =>
-                                        Some("unrecovered")
-                                }
-                            })
+                                            nonRecoveringJSGLR2.parse(reconstructed.inputString) match {
+                                                case ParseSuccess(_) => None
+                                                case ParseFailure(_, _) => Some("reconstruction-broken")
+                                            }
+                                        case _ =>
+                                            Some("unrecovered")
+                                    }
+                                })
 
-                        verdict match {
-                            case Some(verdict) =>
-                                println(s"   Invalid ($verdict): " + filename)
+                            verdict match {
+                                case Some(verdict) =>
+                                    println(s"   Invalid ($verdict): " + filename)
 
-                                mkdir! sourcesDir / "recovery-invalid" / verdict
-                                mv.over(file, sourcesDir / "recovery-invalid" / verdict / filename.last)
-                            case None =>
-                                println("   Valid: " + filename)
+                                    mkdir! sourcesDir / "recovery-invalid" / verdict
+                                    mv.over(file, sourcesDir / "recovery-invalid" / verdict / filename.last)
+                                case None =>
+                                    println("   Valid: " + filename)
+                            }
                         }
                     }
                 }

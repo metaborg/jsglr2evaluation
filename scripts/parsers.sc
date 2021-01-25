@@ -135,20 +135,24 @@ object Parser {
         TokenizerVariant.standard()
     )
 
-    def variants(language: Language)(implicit suite: Suite): Seq[Parser] = Seq(
-        //JSGLR1Parser(language),
-        JSGLR2Parser(language, JSGLR2Variant.Preset.standard, false),
-        JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound, false),
-        JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true),
-        JSGLR2Parser(language, "recovery", recoveryJSGLR2, false),
-        JSGLR2Parser(language, "recoveryEklhound", recoveryElkhoundJSGLR2, false),
-        //JSGLR2Parser(language, JSGLR2Variant.Preset.recoveryIncremental, true),
-    ) ++ language.antlrBenchmarks.map { benchmark =>
-        benchmark.id match {
-            case "antlr" =>
-                ANTLRParser[ANTLR_Java8Lexer, ANTLR_Java8Parser](benchmark.id, new ANTLR_Java8Lexer(_), new ANTLR_Java8Parser(_), _.compilationUnit)
-            case "antlr-optimized" =>
-                ANTLRParser[ANTLR_JavaLexer, ANTLR_JavaParser](benchmark.id, new ANTLR_JavaLexer(_), new ANTLR_JavaParser(_), _.compilationUnit)
+    def jsglr2variants(language: Language)(implicit suite: Suite): Seq[Parser] = suite.jsglr2variants.map(_ match {
+        case "standard"            => JSGLR2Parser(language, JSGLR2Variant.Preset.standard, false)
+        case "elkhound"            => JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound, false)
+        case "incremental"         => JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true)
+        case "recovery"            => JSGLR2Parser(language, "recovery", recoveryJSGLR2, false)
+        case "recoveryElkhound"    => JSGLR2Parser(language, "recoveryElkhound", recoveryElkhoundJSGLR2, false)
+        case "recoveryIncremental" => JSGLR2Parser(language, JSGLR2Variant.Preset.recoveryIncremental, true)
+    })
+
+    def variants(language: Language)(implicit suite: Suite): Seq[Parser] =
+        //JSGLR1Parser(language) +:
+        jsglr2variants(language) ++
+        language.antlrBenchmarks.map { benchmark =>
+            benchmark.id match {
+                case "antlr" =>
+                    ANTLRParser[ANTLR_Java8Lexer, ANTLR_Java8Parser](benchmark.id, new ANTLR_Java8Lexer(_), new ANTLR_Java8Parser(_), _.compilationUnit)
+                case "antlr-optimized" =>
+                    ANTLRParser[ANTLR_JavaLexer, ANTLR_JavaParser](benchmark.id, new ANTLR_JavaLexer(_), new ANTLR_JavaParser(_), _.compilationUnit)
+            }
         }
-    }
 }

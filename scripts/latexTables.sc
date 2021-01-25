@@ -15,34 +15,64 @@ case object Throughput extends BenchmarkType {
     def errorColumns = Seq("low" -> "Low", "high" -> "High")
 }
 
+def mean[B](xs: TraversableOnce[B])(implicit num: Integral[B]): Long = num.toLong(xs.sum) / xs.size
+
+def thousandSeparator[T](num: Any) = {
+    val str = num.toString
+    val front = str.length() % 3
+    val (head, toGroup) = str.splitAt(front)
+    val tail = toGroup.grouped(3)
+    (if (front == 0) tail else Iterator(head) ++ tail).mkString("\\,")
+}
+
 def latexTableTestSets(implicit suite: Suite) = {
-    val s = new StringBuilder()
-
-    s.append("\\begin{tabular}{|l|l|r|r|r|}\n")
-    s.append("\\hline\n")
-    s.append("Language & Source & Files & Lines & Size (bytes) \\\\\n")
-    s.append("\\hline\n")
-
-    suite.languages.foreach { language =>
-        s.append("\\multirow{" + language.sourcesBatchNonEmpty.size + "}{*}{" + language.name + "}\n")
-
-        language.sourcesBatchNonEmpty.zipWithIndex.foreach { case (source, index) =>
+    val languages = suite.languages.map { language =>
+        val sources = language.sourcesBatchNonEmpty.map { source =>
             val files = language.sourceFilesBatch(Some(source))
             val lines = files | read.lines | (_.size) sum
             val size = files | stat | (_.size) sum
 
-            s.append("  & " + source.id + " & " + files.size + " & " + lines + " & " + size + " \\\\ ")
-
-            if (index == language.sourcesBatchNonEmpty.size - 1)
-                s.append("\\hline\n");
-            else
-                s.append("\\cline{2-5}\n")
+            s"  & ${source.getName} & ${files.size} & $lines & $size \\\\"
         }
+
+        s"""|\\multirow{${language.sourcesBatchNonEmpty.size}}{*}{${language.name}}
+            |${sources.mkString(" \\cline{2-5}\n")}""".stripMargin
     }
 
-    s.append("\\end{tabular}\n")
+    s"""|\\begin{tabular}{|l|l|r|r|r|}
+        |\\hline
+        |Language & Source & Files & Lines & Size (bytes) \\\\ \\hline
+        |${languages.mkString(" \\hline\n")} \\hline
+        |\\end{tabular}
+        |""".stripMargin
+}
 
-    s.toString
+def latexTableTestSetsIncremental(implicit suite: Suite) = {
+    val languages = suite.languages.map { language =>
+        val sources = language.sources.incremental.map { source =>
+            val sourceDir = language.sourcesDir / "incremental" / source.id
+            val versions = (ls! sourceDir)
+            val (files, lines, size) = versions.map(path => (path relativeTo sourceDir).toString.toInt).sorted.map { version =>
+                val versionDir = sourceDir / version.toString
+                val files = (ls! versionDir)
+                (files.size.toLong, (files | read.lines | (_.size) sum).toLong, files | stat | (_.size) sum)
+            }.unzip3
+            val values = Iterator(files, lines, size, (size zip files) map { case (s, f) => s / f })
+                .map(v => thousandSeparator(mean(v).toString))
+
+            s"  & ${source.getName} & ${versions.size} & ${values.mkString(" & ")} \\\\"
+        }
+
+        s"""|\\multirow{${sources.size}}{*}{${language.name}}
+            |${sources.mkString(" \\cline{2-7}\n")}""".stripMargin
+    }
+
+    s"""|\\begin{tabular}{|l|l|r|r|r|r|r|}
+        |\\hline
+        |Language & Source & Versions & Files & Lines & Size (B) & Mean file size (B) \\\\ \\hline
+        |${languages.mkString(" \\hline\n")} \\hline
+        |\\end{tabular}
+        |""".stripMargin
 }
 
 def latexTableParseForest(implicit suite: Suite) = {
@@ -163,6 +193,7 @@ def latexTableBenchmarks(benchmarksCSV: CSV, benchmarkType: BenchmarkType)(impli
 mkdir! suite.figuresDir
 
 write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
+write.over(suite.figuresDir / "testsets-incremental.tex", latexTableTestSetsIncremental)
 write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
 write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
 

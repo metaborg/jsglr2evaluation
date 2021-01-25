@@ -153,8 +153,7 @@ def batchLanguageContent(language: Language) = {
     val parseTableMeasurements = language.measurementsParseTable
     val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
         language.sourcesBatchNonEmpty.map { source =>
-            // TODO add field source.name to use in tab title?
-            (s"batch-${language.id}-${source.id}", source.id, batchSourceTabContent(language, Some(source)))
+            (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source)))
         }
 
     s"""|<div class="row">
@@ -181,8 +180,7 @@ def batchContent =
 val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
     val sourcesTabs = language.sources.incremental.map { source =>
         val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
-        // TODO add field source.name to use in tab title?
-        (s"incremental-${language.id}-${source.id}", source.id, plots.map { plot =>
+        (s"incremental-${language.id}-${source.id}", source.getName, plots.map { plot =>
             s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
         }.mkString("\n"))
     }
@@ -193,9 +191,10 @@ val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
     (s"memory-${language.id}", language.name,
         s"""|<div class="row">
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-full-garbage.svg" /></div>
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size.svg" /></div>
-            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-incremental.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-allocations-batch.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size-batch.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-allocations-incremental.svg" /></div>
+            |  <div class="col-lg-6"><img src="./figures/memoryBenchmarks/${language.id}/report-cache-size-incremental.svg" /></div>
             |</div>""".stripMargin)
 }
 
