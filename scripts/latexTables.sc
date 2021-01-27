@@ -80,7 +80,7 @@ def latexTableParseForest(implicit suite: Suite) = {
 
     s.append("\\begin{tabular}{|l|l|r|r|}\n")
     s.append("\\hline\n")
-    s.append("Language & Node Type & Full parse forest & Optimized parse forest \\\\\n")
+    s.append("Language & Type & Full parse forest & Optimized parse forest \\\\\n")
     s.append("\\hline\n")
 
     suite.languages.foreach { language =>
@@ -89,7 +89,7 @@ def latexTableParseForest(implicit suite: Suite) = {
         val measurementsFull      = language.measurementsBatch(None, "standard")
         val measurementsOptimized = language.measurementsBatch(None, "optimized-pf")
         
-        s.append("  & Context-Free & " + measurementsFull("parseNodesContextFree") + " & " + measurementsOptimized("parseNodesContextFree") + " \\\\ \\cline{2-4}\n")
+        s.append("  & Context-free & " + measurementsFull("parseNodesContextFree") + " & " + measurementsOptimized("parseNodesContextFree") + " \\\\ \\cline{2-4}\n")
         s.append("  & Lexical      & " + measurementsFull("parseNodesLexical") +     " & " + measurementsOptimized("parseNodesLexical") +     " \\\\ \\cline{2-4}\n")
         s.append("  & Layout       & " + measurementsFull("parseNodesLayout") +      " & " + measurementsOptimized("parseNodesLayout") +      " \\\\ \\hline\n")
     }
