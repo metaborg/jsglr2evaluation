@@ -139,11 +139,13 @@ suite.languages.foreach { language =>
 
         // Benchmarks (batch sampled)
 
-        language.sourceFilesBatchSampled.foreach { file =>
-            val characters = (read ! file).length
-            val normalize: BigDecimal => BigDecimal = score => characters / score
+        if (exists! language.benchmarksDir / "batch-sampled") {
+            language.sourceFilesBatchSampled.foreach { file =>
+                val characters = (read ! file).length
+                val normalize: BigDecimal => BigDecimal = score => characters / score
 
-            processBenchmarkCSV(CSV.parse(language.benchmarksDir / "batch-sampled" / s"${file.last.toString}.csv"), row => row("Param: variant"), batchSampledResultsDir / "time.csv", batchSampledResultsDir / "throughput.csv", normalize, "," + characters)
+                processBenchmarkCSV(CSV.parse(language.benchmarksDir / "batch-sampled" / s"${file.last.toString}.csv"), row => row("Param: variant"), batchSampledResultsDir / "time.csv", batchSampledResultsDir / "throughput.csv", normalize, "," + characters)
+            }
         }
     }
 
