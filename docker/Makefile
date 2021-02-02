@@ -35,8 +35,11 @@ build-jsglr: pull-jsglr
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2 && mvn install
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.integration && mvn install
 
-build-jsglr2-benchmark: pull-jsglr
+build-jsglr2-benchmark: pull-jsglr tree-sitter-jar
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.benchmark && mvn install
+
+tree-sitter-jar:
+	cd scripts && make treeSitterJar
 
 build-jsglr2-measure: pull-jsglr
 	cd /jsglr2evaluation/data/spoofax/jsglr/org.spoofax.jsglr2.measure && mvn install

@@ -81,6 +81,8 @@ $(TREE_SITTER_JAR):
 		git pull && \
 		mvn -q -DskipTests=true -Dmaven.javadoc.skip=true install
 
+treeSitterJar: $(TREE_SITTER_JAR)
+
 cleanBenchmarks:
 	-rm -r $(DATA_DIR)/benchmarks
 	-rm -r $(JSGLR_DIR)/org.spoofax.jsglr2.benchmarks/target
