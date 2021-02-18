@@ -125,30 +125,21 @@ def latexTableDeterminism(implicit suite: Suite) = {
     s.toString
 }
 
-def latexTableMeasurements(csv: CSV)(implicit suite: Suite) = {
-    val s = new StringBuilder()
-
-    s.append("\\begin{tabular}{|l|" + ("r|" * suite.languages.size) + "}\n")
-    s.append("\\hline\n")
-    s.append("Measure" + suite.languages.map(" & " + _.name).mkString("") + " \\\\\n")
-    s.append("\\hline\n")
-
-    csv.columns.filter(_ != "language").foreach { column =>
-        s.append(column)
-
-        suite.languages.foreach { language =>
-            val row = csv.rows.find(_("language") == language.id).get
-            val value = row(column)
-
-            s.append(" & " + value);
+def latexTableMeasurementsBatch(csv: CSV)(implicit suite: Suite) = {
+    val measurements = csv.columns.filter(_ != "language").map { column =>
+        val languages = suite.languages.map { language =>
+            csv.rows.find(_("language") == language.id).get(column)
         }
 
-        s.append(" \\\\ \\hline\n");
+        s"${column} & ${languages.mkString(" & ")}"
     }
 
-    s.append("\\end{tabular}\n")
-
-    s.toString
+    s"""|\\begin{tabular}{|l|${"r|" * suite.languages.size}}
+        |\\hline
+        |Measure & ${suite.languages.map(_.name).mkString(" & ")} \\\\ \\hline
+        |${measurements.mkString(" \\\\ \\hline\n")} \\\\ \\hline
+        |\\end{tabular}
+        |""".stripMargin
 }
 
 def latexTableBenchmarks(benchmarksCSV: CSV, benchmarkType: BenchmarkType)(implicit suite: Suite) = {
@@ -198,8 +189,8 @@ write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
 write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
 
 if(inScope("batch")) {
-    write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurements(CSV.parse(parseTableMeasurementsPath)))
-    write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurements(CSV.parse(parsingMeasurementsPath)))
+    write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurementsBatch(CSV.parse(parseTableMeasurementsPath)))
+    write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurementsBatch(CSV.parse(parsingMeasurementsPath)))
     Seq(
         InternalParse,
         Internal,
