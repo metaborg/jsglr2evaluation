@@ -8,6 +8,9 @@ println("Adding to website...")
 
 def indent(spaces: Int, str: String) = str.replaceAll("\n", s"\n${" " * spaces}")
 
+def withTooltip(text: String, tooltip: String) =
+    s"""<a onclick"javascript:void" data-toggle="tooltip" data-placement="top" title="$tooltip">$text</a>"""
+
 def withNav(title: String, tabs: Seq[(String, String, String)]) = {
     val active = tabs.filter(_._3 != "").headOption.map(_._1).getOrElse("")
 
@@ -61,7 +64,8 @@ def withTemplate(title: String, config: String, content: String) =
         |    </div>
         |  </div>
         |  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-        |  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+        |  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+        |  <script>$$(() => $$('[data-toggle="tooltip"]').tooltip());</script>
         |</body>
         |</html>
         |""".stripMargin
@@ -85,8 +89,7 @@ if (!dev) {
             |  <span>
             |    ${indent(4, badges)}
             |  </span>
-            |</a>
-            |""".stripMargin)
+            |</a>""".stripMargin)
 
     write.over(indexFile, index.toString + "\n")
 }
@@ -177,16 +180,200 @@ def batchContent =
         |</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 
-val incrementalTabs = suite.languages.filter(_.sources.incremental.nonEmpty).map { language =>
-    val sourcesTabs = language.sources.incremental.map { source =>
-        val plots = Seq("report", "report-except-first", "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D")
-        (s"incremental-${language.id}-${source.id}", source.getName, plots.map { plot =>
-            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
-        }.mkString("\n"))
+object IncrementalMeasurementsTableUtils {
+    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesNonDeterministic", "characterNodes")
+
+    val measurementsCellsSkew = Seq(
+        "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
+        "breakDowns", "breakDownNoActions", "breakDownNonDeterministic", "breakDownTemporary", "breakDownWrongState"
+    )
+
+    val relativeTo = Map(
+        "parseNodesAmbiguous" -> "parseNodes",
+        "parseNodesNonDeterministic" -> "parseNodes",
+        "parseNodesReused" -> "parseNodesPrev",
+        "parseNodesRebuilt" -> "parseNodesPrev",
+        "breakDowns" -> "parseNodesPrev",
+        "breakDownNoActions" -> "breakDowns",
+        "breakDownNonDeterministic" -> "breakDowns",
+        "breakDownTemporary" -> "breakDowns",
+        "breakDownWrongState" -> "breakDowns",
+    )
+
+    def perc(value: Long, total: Long, percentageOnly: Boolean = false) = {
+        val percentage = f"${value * 100.0 / total}%2.2f%%"
+        if (total == 0)
+            s"$value"
+        else
+            if (percentageOnly) percentage else s"$value\n($percentage)"
     }
 
-    (s"incremental-${language.id}", language.name, withNav("<h3>Sources</h3>", sourcesTabs))
+    def cellMapper(row: Map[String, Long], percentageOnly: Boolean = false)(key: String) = {
+        val res =
+            if (relativeTo.contains(key))
+                perc(row(key), row(relativeTo(key)), percentageOnly)
+            else
+                row(key).toString
+        res
+    }
+
+    def cellMapperPercs(avgs: Map[String, Long], avgPercs: Map[String, Double])(key: String) = {
+        val res =
+            if (avgPercs.contains(key))
+                f"${avgPercs(key)}%2.2f%%"
+            else
+                avgs(key).toString
+        res
+    }
+
+    def tdWrapper(mapper: (String) => String) = (key: String) => s"<td>${mapper(key).replace("\n", "<br />")}</td>"
 }
+
+def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], header: String) = {
+    import IncrementalMeasurementsTableUtils._
+
+    val n = rows.length
+
+    val measurementsAvgRow =
+        if (header == "Version")
+            s"""|<tr>
+                |  <td>Average (0..${n - 2})</td>
+                |  ${indent(2, measurementsCells.map(tdWrapper(cellMapper(rows.dropRight(1).avgMaps))).mkString("\n"))}
+                |</tr>""".stripMargin
+        else
+            s"""|<tr>
+                |  <td>Average</td>
+                |  ${indent(2, measurementsCells.map(tdWrapper(cellMapperPercs(rows.avgMaps, rows.avgPercs(relativeTo)))).mkString("\n"))}
+                |</tr>""".stripMargin
+
+    val measurementsRows = ids.zip(rows).map { case (label, row) =>
+        s"""|<tr>
+            |  <td>$label</td>
+            |  ${indent(2, measurementsCells.map(tdWrapper(cellMapper(row, header != "Version"))).mkString("\n"))}
+            |</tr>""".stripMargin
+    }
+
+    s"""|<table style="text-align: center;" border="1" cellpadding="2">
+        |  <tr>
+        |    <th rowspan="2">$header</th>
+        |    <th colspan="3">Parse Nodes</th>
+        |    <th colspan="1" rowspan="2">Character<br />Nodes<br />Count</th>
+        |  </tr>
+        |  <tr>
+        |    <th>Count</th>
+        |    <th>${withTooltip("Ambiguous", "Parse nodes that have multiple derivations")}</th>
+        |    <th>${withTooltip("Non-det.", "Parse nodes that were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
+        |  </tr>
+        |  ${indent(2, measurementsAvgRow)}
+        |  ${if (header == "Version") s"""<tr><td colspan="7"><br /></td></tr>""" else ""}
+        |  ${indent(2, measurementsRows.mkString("\n"))}
+        |</table>""".stripMargin
+}
+
+def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, Long]], header: String) = {
+    import IncrementalMeasurementsTableUtils._
+
+    val n = skewRows.length
+
+    val measurementsAvgRow =
+        if (header == "Version")
+            s"""|<tr>
+                |  <td>Average (1..${n - 1})</td>
+                |  ${indent(2, measurementsCellsSkew.map(tdWrapper(cellMapper(skewRows.drop(1).avgMaps))).mkString("\n"))}
+                |</tr>""".stripMargin
+        else
+            s"""|<tr>
+                |  <td>Average</td>
+                |  ${indent(2, measurementsCellsSkew.map(tdWrapper(cellMapperPercs(skewRows.avgMaps, skewRows.avgPercs(relativeTo)))).mkString("\n"))}
+                |</tr>""".stripMargin
+
+    val measurementsRows = skewIds.zip(skewRows).map { case (label, row) =>
+        if (row.getOrElse("version", -1) == 0) {
+            s"""|<tr>
+                |  <td>$label</td>
+                |  <td>${row("createParseNode")}</td>
+                |  <td colspan="2"></td>
+                |  <td>${row("shiftParseNode")}</td>
+                |  <td>${row("shiftCharacterNode")}</td>
+                |  <td colspan="5"></td>
+                |</tr>""".stripMargin
+        } else {
+            s"""|<tr>
+                |  <td>$label</td>
+                |  ${indent(2, measurementsCellsSkew.map(tdWrapper(cellMapper(row, header != "Version"))).mkString("\n"))}
+                |</tr>""".stripMargin
+        }
+    }
+
+    s"""|<table style="text-align: center;" border="1" cellpadding="2">
+        |  <tr>
+        |    <th rowspan="2">$header</th>
+        |    <th colspan="3">Parse Nodes</th>
+        |    <th colspan="2">Shift</th>
+        |    <th colspan="5">Breakdown</th>
+        |  </tr>
+        |  <tr>
+        |    <th>Created</th>
+        |    <th>${withTooltip("Reused", "Parse nodes that were reused from the previous parse forest")}</th>
+        |    <th>${withTooltip("Rebuilt", "Parse nodes that were broken down during parsing, but recreated with the exact same children as in the previous version")}</th>
+        |    <th>Parse Node</th>
+        |    <th>Character Node</th>
+        |    <th>Count</th>
+        |    <th>${withTooltip("No Actions", "Parse nodes that were broken down because no actions were found in the parse table")}</th>
+        |    <th>${withTooltip("Non-det.", "Parse nodes that were broken down because they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
+        |    <th>${withTooltip("Temporary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
+        |    <th>${withTooltip("Wrong State", "Parse nodes that were broken down because their saved parse state does not match the current state of the parser")}</th>
+        |  </tr>
+        |  ${indent(2, measurementsAvgRow)}
+        |  ${indent(2, measurementsRows.mkString("\n"))}
+        |</table>""".stripMargin
+}
+
+def incrementalMeasurementsTables(rowsTuple: (Seq[Map[String, Long]], Seq[Map[String, Long]]), header: String, optionalIds: Seq[String] = Seq.empty) = rowsTuple match {
+    case (csvRows, skewRows) =>
+        val n = csvRows.length
+        val ids = if (optionalIds.length == n) optionalIds else (0 to n).map(_.toString)
+        val skewIds = if (header == "Version") (0 to n).map(i => s"${if (i == 0) "&nbsp;&nbsp;" else i - 1} -> ${i}") else ids
+        val skewRows2 = if (header == "Version") csvRows(0) +: skewRows else skewRows
+        s"""|<div class="row">
+            |  <div class="col-md-4">
+            |    ${indent(4, createMeasurementsTable(ids, csvRows, header))}
+            |  </div>
+            |  <div class="col-md-8">
+            |    ${indent(4, createMeasurementsTableSkew(skewIds, skewRows2, header))}
+            |  </div>
+            |</div>""".stripMargin
+}
+
+val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
+
+val incrementalTabs = languagesWithIncrementalSources.map { language =>
+    val sourcesTabs = language.sources.incremental.map { source =>
+        val measurementsTables = incrementalMeasurementsTables(language.measurementsIncremental(Some(source)), "Version")
+
+        val plotFilenames = Seq(
+            "report", "report-except-first",
+            "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D"
+        )
+        val plots = plotFilenames.map { plot =>
+            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
+        }.mkString("\n")
+
+        (s"incremental-${language.id}-${source.id}", source.getName, s"$measurementsTables\n$plots")
+    }
+
+    (s"incremental-${language.id}", language.name,
+        s"""|${incrementalMeasurementsTables(language.measurementsIncremental(None), "Source", language.sources.incremental.map(_.getName))}
+            |${withNav("<h3>Sources</h3>", sourcesTabs)}""".stripMargin)
+}
+
+val incrementalContent =
+    s"""|${incrementalMeasurementsTables(
+            languagesWithIncrementalSources.map(_.measurementsIncremental(None)).map { case (a, b) => (a.avgMaps, b.avgMaps) }.unzip,
+            "Language",
+            languagesWithIncrementalSources.map(_.name)
+         )}
+        |${withNav("<h2>Per Language</h2>", incrementalTabs)}""".stripMargin
 
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
     (s"memory-${language.id}", language.name,
@@ -199,10 +386,9 @@ val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBe
 }
 
 val tabs = Seq(
-    ("batch", "Batch",
-        if (exists! dir / "figures" / "batch" / "external" / "throughput.png" && batchTabs.nonEmpty) batchContent else ""),
+    ("batch", "Batch", if (inScope("batch")) batchContent else ""),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (incrementalTabs.nonEmpty) withNav("<h2>Per Language</h2>", incrementalTabs) else ""),
+    ("incremental", "Incremental", if (inScope("incremental")) incrementalContent else ""),
     ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav("<h2>Per Language</h2>", memoryTabs) else ""),
 )
 

@@ -48,9 +48,38 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
             case Some(source) => measurementsDir / "batch" / source.id
         }) / "parsing.csv"
 
-        CSV.parse(measurementsCSV).rows.find {
-            _("name") == variant
-        }.get
+        CSV.parse(measurementsCSV).rows.find(_("name") == variant).get
+    }
+
+    private def measurementsIncrementalInternal(source: IncrementalSource)(implicit suite: Suite) = {
+        val measurementsCSV = measurementsDir / "incremental" / source.id / "parsing-incremental.csv"
+        CSV.parse(measurementsCSV).rows.map { row =>
+            row.values.map{ case k -> v => k -> v.toLong }
+        }
+    }
+
+    def measurementsIncremental(source: Option[IncrementalSource])(implicit suite: Suite): (Seq[Map[String, Long]], Seq[Map[String, Long]]) = {
+        source match {
+            case None =>
+                sources.incremental.map { source =>
+                    val csvRows = measurementsIncrementalInternal(source)
+                    val avgs = csvRows.avgMaps + ("version" -> -1L)
+                    val avgsExceptLast = csvRows.dropRight(1).avgMaps + ("version" -> -1L)
+
+                    val skewRows = csvRows.dropRight(1).zip(csvRows.drop(1)).map { case (prevRow, row) =>
+                        (prevRow - "version").map{ case k -> v => s"${k}Prev" -> v} ++ row
+                    }
+                    val skewAvgs = skewRows.avgMaps + ("version" -> -1L)
+
+                    (avgsExceptLast - "version", skewAvgs - "version")
+                }.unzip
+            case Some(source) =>
+                val csvRows = measurementsIncrementalInternal(source)
+                val skewRows = csvRows.dropRight(1).zip(csvRows.drop(1)).map { case (prevRow, row) =>
+                    (prevRow - "version").map{ case k -> v => s"${k}Prev" -> v} ++ row
+                }
+                (csvRows, skewRows)
+        }
     }
 
     def measurementsParseTable(implicit suite: Suite) =
@@ -320,4 +349,21 @@ def withTimeout[T](body: => T, timeout: Long)(onTimeOut: => T)(onFailure: Throwa
     executor.shutdown()
 
     res
+}
+
+implicit class SumMaps(val maps: Seq[Map[String, Long]]) extends AnyVal {
+    def sumMaps(): Map[String, Long] =
+        maps.fold(Map[String, Long]()) { (acc, row) =>
+            row.keys.map(k => k -> (acc.getOrElse(k, 0L) + row(k))).toMap
+        }
+
+    def avgMaps(): Map[String, Long] =
+        maps.sumMaps.map { case k -> v => k -> (v / maps.length) }
+
+    def avgPercs(relativeTo: Map[String, String]): Map[String, Double] =
+        maps.foldLeft(Map[String, Double]()) { (acc: Map[String, Double], row: Map[String, Long]) =>
+            relativeTo.keys.filter(key => row.contains(key) && row.contains(relativeTo(key))).map { k =>
+                k -> (acc.getOrElse(k, 0.0) + (row(k).toDouble * 100.0 / row(relativeTo(k)).toDouble))
+            }.toMap
+        }.map { case k -> v => k -> (v / maps.length) }
 }

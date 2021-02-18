@@ -22,10 +22,11 @@ suite.languages.foreach { language =>
                 )
             }
 
-        timed("measure " + language.id + source.fold("")("/" + _.id)) {
+        timed("measure " + language.id + source.fold("")("/" + _.id) + " (batch)") {
             %%(
                 "mvn",
-                "exec:java",
+                "-q",
+                "exec:java@batch",
                 "-Dexec.args=\""+
                     s"language=${language.id} " +
                     s"extension=${language.extension} " +
@@ -39,11 +40,33 @@ suite.languages.foreach { language =>
         }
     }
 
+    def incrementalMeasurements(source: IncrementalSource) = {
+        timed("measure " + language.id + "/" + source.id + " (incremental)") {
+            %%(
+                "mvn",
+                "-q",
+                "exec:java@incremental",
+                "-Dexec.args=\""+
+                    s"language=${language.id} " +
+                    s"extension=${language.extension} " +
+                    s"parseTablePath=${language.parseTableTermPath} " +
+                    s"sourcePath=${language.sourcesDir / "incremental" / source.id} " +
+                "\"",
+                s"-DreportPath=${language.measurementsDir / "incremental" / source.id}",
+                MAVEN_OPTS="-Xmx8G -Xss64M"
+            )(suite.spoofaxDir / "jsglr" / "org.spoofax.jsglr2.measure")
+        }
+    }
+
     if (language.sourcesBatchNonEmpty.nonEmpty) {
         batchMeasurements(None)
 
         language.sourcesBatchNonEmpty.map { source =>
             batchMeasurements(Some(source))
         }
+    }
+
+    language.sources.incremental.foreach { source =>
+        incrementalMeasurements(source)
     }
 }
