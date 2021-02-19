@@ -180,55 +180,6 @@ def batchContent =
         |</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 
-object IncrementalMeasurementsTableUtils {
-    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesNonDeterministic", "characterNodes")
-
-    val measurementsCellsSkew = Seq(
-        "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
-        "breakDowns", "breakDownNoActions", "breakDownNonDeterministic", "breakDownTemporary", "breakDownWrongState"
-    )
-
-    val relativeTo = Map(
-        "parseNodesAmbiguous" -> "parseNodes",
-        "parseNodesNonDeterministic" -> "parseNodes",
-        "parseNodesReused" -> "parseNodesPrev",
-        "parseNodesRebuilt" -> "parseNodesPrev",
-        "breakDowns" -> "parseNodesPrev",
-        "breakDownNoActions" -> "breakDowns",
-        "breakDownNonDeterministic" -> "breakDowns",
-        "breakDownTemporary" -> "breakDowns",
-        "breakDownWrongState" -> "breakDowns",
-    )
-
-    def perc(value: Long, total: Long, percentageOnly: Boolean = false) = {
-        val percentage = f"${value * 100.0 / total}%2.2f%%"
-        if (total == 0)
-            s"$value"
-        else
-            if (percentageOnly) percentage else s"$value\n($percentage)"
-    }
-
-    def cellMapper(row: Map[String, Long], percentageOnly: Boolean = false)(key: String) = {
-        val res =
-            if (relativeTo.contains(key))
-                perc(row(key), row(relativeTo(key)), percentageOnly)
-            else
-                row(key).toString
-        res
-    }
-
-    def cellMapperPercs(avgs: Map[String, Long], avgPercs: Map[String, Double])(key: String) = {
-        val res =
-            if (avgPercs.contains(key))
-                f"${avgPercs(key)}%2.2f%%"
-            else
-                avgs(key).toString
-        res
-    }
-
-    def tdWrapper(mapper: (String) => String) = (key: String) => s"<td>${mapper(key).replace("\n", "<br />")}</td>"
-}
-
 def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], header: String) = {
     import IncrementalMeasurementsTableUtils._
 

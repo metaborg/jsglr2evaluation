@@ -142,6 +142,107 @@ def latexTableMeasurementsBatch(csv: CSV)(implicit suite: Suite) = {
         |""".stripMargin
 }
 
+
+val texWrapper = (mapper: (String) => String) => (key: String) => {
+    val res = mapper(key).replace("%", "\\%")
+    val res2 = if (res.contains("\n")) s"\\makecell[r]{${res.replace("\n", "\\\\")}}" else res
+    "([0-9]{4,})".r.replaceSomeIn(res2, m => Some(thousandSeparator(m.group(1)).replace("\\", "\\\\")))
+}
+
+def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]]) = {
+    import IncrementalMeasurementsTableUtils._
+
+    val n = rows.length
+
+    val measurementsCells = Seq(
+        "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
+        "breakDownNoActions", "breakDownNonDeterministic", "breakDownTemporary", "breakDownWrongState"
+    )
+
+    val measurementsAvgRow =
+        s"Average & ${measurementsCells.map(texWrapper(cellMapperPercs(rows.avgMaps, rows.avgPercs(relativeTo)))).mkString(" & ")}"
+
+    val measurementsRows = ids.zip(rows).map { case (label, row) =>
+        s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, true))).mkString(" & ")}"
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${measurementsCells.size}}{|r}}
+        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{Breakdowns (\\% of total breakdowns)} \\\\
+        |       & \\multirowcell{2}{Non-\\\\det.} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
+        |       & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Non-\\\\det.} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
+        |  & & & & & & & & \\\\ \\hline
+        |  ${measurementsAvgRow} \\\\ \\hline
+        |  ${measurementsRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
+def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], header: String) = {
+    import IncrementalMeasurementsTableUtils._
+
+    val n = rows.length
+
+    val measurementsAvgRow =
+        if (header == "Version")
+            s"\\makecell{Average\\\\(0..${n - 2})} & ${measurementsCells.map(texWrapper(cellMapper(rows.dropRight(1).avgMaps))).mkString(" & ")}"
+        else
+            s"Average & ${measurementsCells.map(texWrapper(cellMapperPercs(rows.avgMaps, rows.avgPercs(relativeTo)))).mkString(" & ")}"
+
+    val measurementsRows = ids.zip(rows).map { case (label, row) =>
+        s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, header != "Version"))).mkString(" & ")}"
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${measurementsCells.size}}{|r}}
+        |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes}   & \\multirowcell{3}{Character\\\\Nodes\\\\Count} \\\\
+        |                             & \\multirowcell{2}{Count}
+        |                             & \\multirowcell{2}{Ambi-\\\\guous}
+        |                             & \\multirowcell{2}{Non-\\\\det.}     \\\\
+        |  & & & \\\\ \\hline
+        |  ${measurementsAvgRow} \\\\ \\hline
+        |  ${if (header == "Version") " & & & & \\\\" else ""}
+        |  ${measurementsRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
+def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, Long]], header: String) = {
+    import IncrementalMeasurementsTableUtils._
+
+    val n = skewRows.length
+
+    val measurementsAvgRow =
+        if (header == "Version")
+            s"\\makecell{Average\\\\(1..${n - 1})} & ${measurementsCellsSkew.map(texWrapper(cellMapper(skewRows.drop(1).avgMaps))).mkString(" & ")}"
+        else
+            s"Average & ${measurementsCellsSkew.map(texWrapper(cellMapperPercs(skewRows.avgMaps, skewRows.avgPercs(relativeTo)))).mkString(" & ")}"
+
+    val measurementsRows = skewIds.zip(skewRows).map { case (label, row) =>
+        if (row.getOrElse("version", -1) == 0) {
+            s"$label & ${thousandSeparator(row("createParseNode"))} & & & ${thousandSeparator(row("shiftParseNode"))} & ${thousandSeparator(row("shiftCharacterNode"))} & & & & &"
+        } else {
+            s"$label & ${measurementsCellsSkew.map(texWrapper(cellMapper(row, header != "Version"))).mkString(" & ")}"
+        }
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${measurementsCellsSkew.size}}{|r}}
+        |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes} &                \\multicolumn{2}{c|}{Shift}                & \\multicolumn{5}{c}{Breakdown} \\\\
+        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{No\\\\Actions} & \\makecell{Non-\\\\det.} & \\makecell{Tempo-\\\\rary} & \\makecell{Wrong\\\\State} \\\\ \\hline
+        |  ${measurementsAvgRow} \\\\ \\hline
+        |  ${measurementsRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
+def latexTableMeasurementsIncremental(rowsTuple: (Seq[Map[String, Long]], Seq[Map[String, Long]]), header: String, optionalIds: Seq[String] = Seq.empty) = rowsTuple match {
+    case (csvRows, skewRows) =>
+        val n = csvRows.length
+        val ids = if (optionalIds.length == n) optionalIds else (0 to n).map(_.toString)
+        val skewIds = if (header == "Version") (0 to n).map(i => s"${if (i == 0) "~~" else i - 1} -> ${i}") else ids
+        val skewRows2 = if (header == "Version") csvRows(0) +: skewRows else skewRows
+        (createMeasurementsTable(ids, csvRows, header), createMeasurementsTableSkew(skewIds, skewRows2, header))
+}
+
+
 def latexTableBenchmarks(benchmarksCSV: CSV, benchmarkType: BenchmarkType)(implicit suite: Suite) = {
     val s = new StringBuilder()
 
@@ -188,7 +289,7 @@ write.over(suite.figuresDir / "testsets-incremental.tex", latexTableTestSetsIncr
 write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
 write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
 
-if(inScope("batch")) {
+if (inScope("batch")) {
     write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurementsBatch(CSV.parse(parseTableMeasurementsPath)))
     write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurementsBatch(CSV.parse(parsingMeasurementsPath)))
     Seq(
@@ -199,4 +300,73 @@ if(inScope("batch")) {
         write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "time.csv"),       Time))
         write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "throughput.csv"), Throughput))
     }
+}
+
+if (inScope("incremental")) {
+    val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
+
+    languagesWithIncrementalSources.foreach { language =>
+        language.sources.incremental.foreach { source =>
+            val (table, skewTable) = latexTableMeasurementsIncremental(language.measurementsIncremental(Some(source)), "Version")
+            write.over(suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental.tex", table)
+            write.over(suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental-skew.tex", skewTable)
+        }
+
+        val (table, skewTable) = latexTableMeasurementsIncremental(language.measurementsIncremental(None), "Source", language.sources.incremental.map(_.getName))
+        write.over(suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental.tex", table)
+        write.over(suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental-skew.tex", skewTable)
+    }
+
+    val languageRows = languagesWithIncrementalSources.map(_.measurementsIncremental(None)).map {
+        case (a, b) => (a.avgMaps, b.avgMaps)
+    }.unzip
+    val languageNames = languagesWithIncrementalSources.map(_.name)
+
+    val (table, skewTable) = latexTableMeasurementsIncremental(languageRows, "Language", languageNames)
+    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental.tex", table)
+    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-skew.tex", skewTable)
+    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-summary.tex", createMeasurementsTableSummary(languageNames, languageRows._2))
+
+    val appendix =
+        s"""|\\begin{table}[ht]
+            |    \\caption{Incremental parsing measurements for all languages.}
+            |    \\label{tbl:incremental-measurements-all}
+            |    \\resizebox{\\linewidth}{!}{%
+            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{0.5em}%
+            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental-skew}%
+            |    }
+            |\\end{table}
+            |
+            |
+            |${languagesWithIncrementalSources.map { language =>
+                s"""|\\clearpage
+                    |
+                    |\\section{${language.name}}
+                    |
+                    |\\vfill
+                    |
+                    |\\begin{table}[H]
+                    |    \\caption{Incremental parsing measurements for the ${language.name} language.}
+                    |    \\label{tbl:incremental-measurements-${language.id}}
+                    |    \\resizebox{\\linewidth}{!}{%
+                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{0.5em}%
+                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental-skew}%
+                    |    }
+                    |\\end{table}
+                    |
+                    |${language.sources.incremental.map { source =>
+                        s"""|\\vfill
+                            |
+                            |\\begin{table}[H]
+                            |    \\caption{Incremental parsing measurements for ${language.name} source ${source.getName}.}
+                            |    \\label{tbl:incremental-measurements-${language.id}-${source.id}}
+                            |    \\resizebox{\\linewidth}{!}{%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{0.5em}%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental-skew}%
+                            |    }
+                            |\\end{table}""".stripMargin
+                     }.mkString("\n\n")}""".stripMargin
+             }.mkString("\n\n\n")}
+            |""".stripMargin
+    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-appendix.tex", appendix)
 }
