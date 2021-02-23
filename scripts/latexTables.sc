@@ -156,7 +156,7 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
 
     val measurementsCells = Seq(
         "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
-        "breakDownNoActions", "breakDownNonDeterministic", "breakDownTemporary", "breakDownWrongState"
+        "breakDownNonDeterministic", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
     )
 
     val measurementsAvgRow =
@@ -166,10 +166,11 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
         s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, true))).mkString(" & ")}"
     }
 
+    // The resizebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
     s"""|\\begin{tabular}[t]{c *{${measurementsCells.size}}{|r}}
-        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{Breakdowns (\\% of total breakdowns)} \\\\
-        |       & \\multirowcell{2}{Non-\\\\det.} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
-        |       & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Non-\\\\det.} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
+        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\resizebox{0.4\\textwidth}{!}{Breakdowns (\\% of total breakdowns)}} \\\\
+        |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
+        |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
         |  & & & & & & & & \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
@@ -196,7 +197,7 @@ def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], head
         |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes}   & \\multirowcell{3}{Character\\\\Nodes\\\\Count} \\\\
         |                             & \\multirowcell{2}{Count}
         |                             & \\multirowcell{2}{Ambi-\\\\guous}
-        |                             & \\multirowcell{2}{Non-\\\\det.}     \\\\
+        |                             & \\multirowcell{2}{Irre-\\\\usable}     \\\\
         |  & & & \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${if (header == "Version") " & & & & \\\\" else ""}
@@ -226,7 +227,7 @@ def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, 
 
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSkew.size}}{|r}}
         |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes} &                \\multicolumn{2}{c|}{Shift}                & \\multicolumn{5}{c}{Breakdown} \\\\
-        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{No\\\\Actions} & \\makecell{Non-\\\\det.} & \\makecell{Tempo-\\\\rary} & \\makecell{Wrong\\\\State} \\\\ \\hline
+        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{Irre-\\\\usable} & \\makecell{No\\\\Actions} & \\makecell{Tempo-\\\\rary} & \\makecell{Wrong\\\\State} \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
         |\\end{tabular}

@@ -213,7 +213,7 @@ def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], head
         |  <tr>
         |    <th>Count</th>
         |    <th>${withTooltip("Ambiguous", "Parse nodes that have multiple derivations")}</th>
-        |    <th>${withTooltip("Non-det.", "Parse nodes that were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
+        |    <th>${withTooltip("Irreusable", "Parse nodes that are marked as irreusable, i.e., they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
         |  </tr>
         |  ${indent(2, measurementsAvgRow)}
         |  ${if (header == "Version") s"""<tr><td colspan="7"><br /></td></tr>""" else ""}
@@ -270,8 +270,8 @@ def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, 
         |    <th>Parse Node</th>
         |    <th>Character Node</th>
         |    <th>Count</th>
+        |    <th>${withTooltip("Irreusable", "Parse nodes that were broken down because they are irreusable, i.e., they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
         |    <th>${withTooltip("No Actions", "Parse nodes that were broken down because no actions were found in the parse table")}</th>
-        |    <th>${withTooltip("Non-det.", "Parse nodes that were broken down because they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
         |    <th>${withTooltip("Temporary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
         |    <th>${withTooltip("Wrong State", "Parse nodes that were broken down because their saved parse state does not match the current state of the parser")}</th>
         |  </tr>

@@ -373,7 +373,7 @@ object IncrementalMeasurementsTableUtils {
 
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
-        "breakDowns", "breakDownNoActions", "breakDownNonDeterministic", "breakDownTemporary", "breakDownWrongState"
+        "breakDowns", "breakDownNonDeterministic", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
     )
 
     val relativeTo = Map(
