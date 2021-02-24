@@ -64,13 +64,12 @@ def latexTableTestSetsIncremental(implicit suite: Suite) = {
         }
 
         s"""|\\multirow{${sources.size}}{*}{${language.name}}
-            |${sources.mkString(" \\cline{2-7}\n")}""".stripMargin
+            |${sources.mkString("\n")}""".stripMargin
     }
 
-    s"""|\\begin{tabular}{|l|l|r|r|r|r|r|}
-        |\\hline
+    s"""|\\begin{tabular}{l|l|r|r|r|r|r}
         |Language & Source & Versions & Files & Lines & Size (B) & Mean file size (B) \\\\ \\hline
-        |${languages.mkString(" \\hline\n")} \\hline
+        |${languages.mkString(" \\hline\n")}
         |\\end{tabular}
         |""".stripMargin
 }
