@@ -51,34 +51,36 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         CSV.parse(measurementsCSV).rows.find(_("name") == variant).get
     }
 
-    private def measurementsIncrementalInternal(source: IncrementalSource)(implicit suite: Suite) = {
-        val measurementsCSV = measurementsDir / "incremental" / source.id / "parsing-incremental.csv"
-        CSV.parse(measurementsCSV).rows.map { row =>
-            row.values.map{ case k -> v => k -> v.toLong }
-        }
-    }
-
-    def measurementsIncremental(source: Option[IncrementalSource])(implicit suite: Suite): (Seq[Map[String, Long]], Seq[Map[String, Long]]) = {
+    def measurementsIncremental(source: Option[IncrementalSource])(implicit suite: Suite): (
+        Seq[Map[String, Long]], Seq[Map[String, Double]], Seq[Map[String, Long]], Seq[Map[String, Double]],
+        Map[String, Long], Map[String, Double], Map[String, Long], Map[String, Double]
+    ) = {
+        import IncrementalMeasurementsTableUtils.relativeTo
         source match {
             case None =>
-                sources.incremental.map { source =>
-                    val csvRows = measurementsIncrementalInternal(source)
-                    val avgs = csvRows.avgMaps + ("version" -> -1L)
-                    val avgsExceptLast = csvRows.dropRight(1).avgMaps + ("version" -> -1L)
-
-                    val skewRows = csvRows.dropRight(1).zip(csvRows.drop(1)).map { case (prevRow, row) =>
-                        (prevRow - "version").map{ case k -> v => s"${k}Prev" -> v} ++ row
-                    }
-                    val skewAvgs = skewRows.avgMaps + ("version" -> -1L)
-
-                    (avgsExceptLast - "version", skewAvgs - "version")
-                }.unzip
+                val (rows, percs, skewRows, skewPercs) = sources.incremental.map { source =>
+                    val (_, _, _, _, row, perc, skewRow, skewPerc) = measurementsIncremental(Some(source))
+                    (row, perc, skewRow, skewPerc)
+                }.unzip4
+                (rows, percs, skewRows, skewPercs, rows.avgMaps, percs.avgMaps, skewRows.avgMaps, skewPercs.avgMaps)
             case Some(source) =>
-                val csvRows = measurementsIncrementalInternal(source)
-                val skewRows = csvRows.dropRight(1).zip(csvRows.drop(1)).map { case (prevRow, row) =>
+                val measurementsCSV = measurementsDir / "incremental" / source.id / "parsing-incremental.csv"
+                val csvRows = CSV.parse(measurementsCSV).rows.map { row =>
+                    row.values.map{ case k -> v => k -> v.toLong }
+                }
+                val csvRowsExceptLast = csvRows.dropRight(1)
+                val skewRows = csvRowsExceptLast.zip(csvRows.drop(1)).map { case (prevRow, row) =>
                     (prevRow - "version").map{ case k -> v => s"${k}Prev" -> v} ++ row
                 }
-                (csvRows, skewRows)
+                val skewRowsWithFirst = csvRows(0) +: skewRows
+                val avgs = csvRowsExceptLast.avgMaps
+                val avgPercs = csvRowsExceptLast.avgPercs(relativeTo)
+                val skewAvgs = skewRows.avgMaps
+                val skewAvgPercs = skewRows.avgPercs(relativeTo)
+                (
+                    csvRows, csvRows.percs(relativeTo), skewRowsWithFirst, skewRowsWithFirst.percs(relativeTo),
+                    avgs, avgPercs, skewAvgs, skewAvgPercs
+                )
         }
     }
 
@@ -351,21 +353,40 @@ def withTimeout[T](body: => T, timeout: Long)(onTimeOut: => T)(onFailure: Throwa
     res
 }
 
-implicit class SumMaps(val maps: Seq[Map[String, Long]]) extends AnyVal {
+implicit class List4Tuple[A, B, C, D](val list: TraversableOnce[(A, B, C, D)]) extends AnyVal {
+    def unzip4(): (List[A], List[B], List[C], List[D]) = list match {
+        case Nil => (Nil, Nil, Nil, Nil)
+        case (a, b, c, d) :: tail =>
+            val (aa, bb, cc, dd) = tail.unzip4
+            (a :: aa, b :: bb, c :: cc, d :: dd)
+    }
+}
+
+implicit class SumMapsLong(val maps: Seq[Map[String, Long]]) extends AnyVal {
     def sumMaps(): Map[String, Long] =
         maps.fold(Map[String, Long]()) { (acc, row) =>
             row.keys.map(k => k -> (acc.getOrElse(k, 0L) + row(k))).toMap
         }
 
     def avgMaps(): Map[String, Long] =
-        maps.sumMaps.map { case k -> v => k -> (v / maps.length) }
+        maps.sumMaps.map { case k -> v => k -> (v / maps.length + (if ((v % maps.length) * 2 >= maps.length) 1L else 0L))}
 
-    def avgPercs(relativeTo: Map[String, String]): Map[String, Double] =
-        maps.foldLeft(Map[String, Double]()) { (acc: Map[String, Double], row: Map[String, Long]) =>
-            relativeTo.keys.filter(key => row.contains(key) && row.contains(relativeTo(key))).map { k =>
-                k -> (acc.getOrElse(k, 0.0) + (row(k).toDouble * 100.0 / row(relativeTo(k)).toDouble))
-            }.toMap
-        }.map { case k -> v => k -> (v / maps.length) }
+    def percs(relativeTo: Map[String, String]): Seq[Map[String, Double]] =
+        maps.map(row => relativeTo.keys.filter(key => row.contains(key) && row.contains(relativeTo(key))).map { k =>
+            k -> (row(k).toDouble * 100.0 / row(relativeTo(k)).toDouble)
+        }.toMap)
+
+    def avgPercs(relativeTo: Map[String, String]): Map[String, Double] = maps.percs(relativeTo).avgMaps
+}
+
+implicit class SumMapsDouble(val maps: Seq[Map[String, Double]]) extends AnyVal {
+    def sumMaps(): Map[String, Double] =
+        maps.fold(Map[String, Double]()) { (acc, row) =>
+            row.keys.map(k => k -> (acc.getOrElse(k, 0.0) + row(k))).toMap
+        }
+
+    def avgMaps(): Map[String, Double] =
+        maps.sumMaps.map { case k -> v => k -> (v / maps.length)}
 }
 
 object IncrementalMeasurementsTableUtils {
@@ -374,6 +395,11 @@ object IncrementalMeasurementsTableUtils {
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
         "breakDowns", "breakDownNonDeterministic", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
+    )
+
+    val measurementsCellsSummary = Seq(
+        "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
+        "breakDownNonDeterministic", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
     )
 
     val relativeTo = Map(
@@ -388,27 +414,16 @@ object IncrementalMeasurementsTableUtils {
         "breakDownWrongState" -> "breakDowns",
     )
 
-    def perc(value: Long, total: Long, percentageOnly: Boolean = false) = {
-        val percentage = f"${value * 100.0 / total}%2.2f%%"
-        if (total == 0)
-            s"$value"
-        else
-            if (percentageOnly) percentage else s"$value\n($percentage)"
-    }
-
-    def cellMapper(row: Map[String, Long], percentageOnly: Boolean = false)(key: String) = {
-        if (relativeTo.contains(key))
-            perc(row(key), row(relativeTo(key)), percentageOnly)
-        else
+    def cellMapper(row: Map[String, Long], percentages: Map[String, Double], percentageOnly: Boolean = false)(key: String) = {
+        if (percentages.contains(key)) {
+            val percentage = f"${percentages(key)}%2.2f%%"
+            if (percentageOnly) percentage else s"${row(key)}\n($percentage)"
+        } else
             row(key).toString
     }
 
-    def cellMapperPercs(avgs: Map[String, Long], avgPercs: Map[String, Double])(key: String) = {
-        if (avgPercs.contains(key))
-            f"${avgPercs(key)}%2.2f%%"
-        else
-            avgs(key).toString
-    }
-
-    def tdWrapper(mapper: (String) => String) = (key: String) => s"<td>${mapper(key).replace("\n", "<br />")}</td>"
+    def getAllMeasurements(languages: TraversableOnce[Language])(implicit suite: Suite) =
+        languages.map(_.measurementsIncremental(None)).map {
+            case (_, _, _, _, row, perc, skewRow, skewPerc) => (row, perc, skewRow, skewPerc)
+        }.unzip4
 }

@@ -149,25 +149,20 @@ val texWrapper = (mapper: (String) => String) => (key: String) => {
     "([0-9]{4,})".r.replaceSomeIn(res2, m => Some(thousandSeparator(m.group(1)).replace("\\", "\\\\")))
 }
 
-def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]]) = {
+def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]]) = {
     import IncrementalMeasurementsTableUtils._
 
     val n = rows.length
 
-    val measurementsCells = Seq(
-        "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
-        "breakDownNonDeterministic", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
-    )
-
     val measurementsAvgRow =
-        s"Average & ${measurementsCells.map(texWrapper(cellMapperPercs(rows.avgMaps, rows.avgPercs(relativeTo)))).mkString(" & ")}"
+        s"Average & ${measurementsCellsSummary.map(texWrapper(cellMapper(rows.avgMaps, percs.avgMaps, true))).mkString(" & ")}"
 
-    val measurementsRows = ids.zip(rows).map { case (label, row) =>
-        s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, true))).mkString(" & ")}"
+    val measurementsRows = ids.zip(rows zip percs).map { case (label, (row, perc)) =>
+        s"$label & ${measurementsCellsSummary.map(texWrapper(cellMapper(row, perc, true))).mkString(" & ")}"
     }
 
     // The resizebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
-    s"""|\\begin{tabular}[t]{c *{${measurementsCells.size}}{|r}}
+    s"""|\\begin{tabular}[t]{c *{${measurementsCellsSummary.size}}{|r}}
         |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\resizebox{0.4\\textwidth}{!}{Breakdowns (\\% of total breakdowns)}} \\\\
         |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
         |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
@@ -178,19 +173,19 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
         |""".stripMargin
 }
 
-def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], header: String) = {
+def createMeasurementsTable(
+    header: String, ids: Seq[String],
+    rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
+    avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
+) = {
     import IncrementalMeasurementsTableUtils._
 
     val n = rows.length
 
-    val measurementsAvgRow =
-        if (header == "Version")
-            s"\\makecell{Average\\\\(0..${n - 2})} & ${measurementsCells.map(texWrapper(cellMapper(rows.dropRight(1).avgMaps))).mkString(" & ")}"
-        else
-            s"Average & ${measurementsCells.map(texWrapper(cellMapperPercs(rows.avgMaps, rows.avgPercs(relativeTo)))).mkString(" & ")}"
+    val measurementsAvgRow = s"$avgsLabel & ${measurementsCells.map(texWrapper(cellMapper(avgs, avgPercs, header != "Version"))).mkString(" & ")}"
 
-    val measurementsRows = ids.zip(rows).map { case (label, row) =>
-        s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, header != "Version"))).mkString(" & ")}"
+    val measurementsRows = ids.zip(rows zip percs).map { case (label, (row, perc)) =>
+        s"$label & ${measurementsCells.map(texWrapper(cellMapper(row, perc, header != "Version"))).mkString(" & ")}"
     }
 
     s"""|\\begin{tabular}[t]{c *{${measurementsCells.size}}{|r}}
@@ -206,23 +201,22 @@ def createMeasurementsTable(ids: Seq[String], rows: Seq[Map[String, Long]], head
         |""".stripMargin
 }
 
-def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, Long]], header: String) = {
+def createMeasurementsTableSkew(
+    header: String, ids: Seq[String],
+    rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
+    avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
+) = {
     import IncrementalMeasurementsTableUtils._
 
-    val n = skewRows.length
+    val n = rows.length
 
-    val measurementsAvgRow =
-        if (header == "Version")
-            s"\\makecell{Average\\\\(1..${n - 1})} & ${measurementsCellsSkew.map(texWrapper(cellMapper(skewRows.drop(1).avgMaps))).mkString(" & ")}"
-        else
-            s"Average & ${measurementsCellsSkew.map(texWrapper(cellMapperPercs(skewRows.avgMaps, skewRows.avgPercs(relativeTo)))).mkString(" & ")}"
+    val measurementsAvgRow = s"$avgsLabel & ${measurementsCellsSkew.map(texWrapper(cellMapper(avgs, avgPercs, header != "Version"))).mkString(" & ")}"
 
-    val measurementsRows = skewIds.zip(skewRows).map { case (label, row) =>
-        if (row.getOrElse("version", -1) == 0) {
+    val measurementsRows = ids.zip(rows zip percs).map { case (label, (row, perc)) =>
+        if (row.getOrElse("version", -1) == 0)
             s"$label & ${thousandSeparator(row("createParseNode"))} & & & ${thousandSeparator(row("shiftParseNode"))} & ${thousandSeparator(row("shiftCharacterNode"))} & & & & &"
-        } else {
-            s"$label & ${measurementsCellsSkew.map(texWrapper(cellMapper(row, header != "Version"))).mkString(" & ")}"
-        }
+        else
+            s"$label & ${measurementsCellsSkew.map(texWrapper(cellMapper(row, perc, header != "Version"))).mkString(" & ")}"
     }
 
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSkew.size}}{|r}}
@@ -232,15 +226,6 @@ def createMeasurementsTableSkew(skewIds: Seq[String], skewRows: Seq[Map[String, 
         |  ${measurementsRows.mkString(" \\\\\n  ")}
         |\\end{tabular}
         |""".stripMargin
-}
-
-def latexTableMeasurementsIncremental(rowsTuple: (Seq[Map[String, Long]], Seq[Map[String, Long]]), header: String, optionalIds: Seq[String] = Seq.empty) = rowsTuple match {
-    case (csvRows, skewRows) =>
-        val n = csvRows.length
-        val ids = if (optionalIds.length == n) optionalIds else (0 to n).map(_.toString)
-        val skewIds = if (header == "Version") (0 to n).map(i => s"${if (i == 0) "~~" else i - 1} -> ${i}") else ids
-        val skewRows2 = if (header == "Version") csvRows(0) +: skewRows else skewRows
-        (createMeasurementsTable(ids, csvRows, header), createMeasurementsTableSkew(skewIds, skewRows2, header))
 }
 
 
@@ -304,29 +289,56 @@ if (inScope("batch")) {
 }
 
 if (inScope("incremental")) {
+    import IncrementalMeasurementsTableUtils._
+
     val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
 
     languagesWithIncrementalSources.foreach { language =>
         language.sources.incremental.foreach { source =>
-            val (table, skewTable) = latexTableMeasurementsIncremental(language.measurementsIncremental(Some(source)), "Version")
-            write.over(suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental.tex", table)
-            write.over(suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental-skew.tex", skewTable)
+            val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
+            val n = rows.length
+
+            val ids = (0 to n).map(_.toString)
+            val skewIds = (0 to n).map(i => s"${if (i == 0) "~~" else i - 1} -> ${i}")
+
+            val avgsLabel = s"\\makecell{Average\\\\(0..${n - 2})}"
+            val skewAvgsLabel = s"\\makecell{Average\\\\(1..${n - 1})}"
+
+            write.over(
+                suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental.tex",
+                createMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs))
+            write.over(
+                suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental-skew.tex",
+                createMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
         }
 
-        val (table, skewTable) = latexTableMeasurementsIncremental(language.measurementsIncremental(None), "Source", language.sources.incremental.map(_.getName))
-        write.over(suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental.tex", table)
-        write.over(suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental-skew.tex", skewTable)
+        val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(None)
+        val n = rows.length
+
+        val ids = language.sources.incremental.map(_.getName)
+
+        write.over(
+            suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental.tex",
+            createMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs))
+        write.over(
+            suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental-skew.tex",
+            createMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
     }
 
-    val languageRows = languagesWithIncrementalSources.map(_.measurementsIncremental(None)).map {
-        case (a, b) => (a.avgMaps, b.avgMaps)
-    }.unzip
     val languageNames = languagesWithIncrementalSources.map(_.name)
+    val (rows, percs, skewRows, skewPercs) = getAllMeasurements(languagesWithIncrementalSources)
 
-    val (table, skewTable) = latexTableMeasurementsIncremental(languageRows, "Language", languageNames)
-    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental.tex", table)
-    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-skew.tex", skewTable)
-    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-summary.tex", createMeasurementsTableSummary(languageNames, languageRows._2))
+    write.over(
+        suite.figuresDir / "incremental" / "measurements-parsing-incremental.tex",
+        createMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps))
+    write.over(
+        suite.figuresDir / "incremental" / "measurements-parsing-incremental-skew.tex",
+        createMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
+    write.over(
+        suite.figuresDir / "incremental" / "measurements-parsing-incremental-summary.tex",
+        createMeasurementsTableSummary(languageNames,
+            rows.zip(skewRows).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesNonDeterministic")),
+            percs.zip(skewPercs).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesNonDeterministic"))))
 
     val appendix =
         s"""|\\begin{table}[ht]
