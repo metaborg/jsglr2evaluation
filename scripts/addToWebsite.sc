@@ -365,6 +365,11 @@ write.over(
     dir / "index.html",
     withTemplate(id, config,
         s"""|<p><strong>Iterations:</strong> ${suite.warmupIterations}/${suite.benchmarkIterations}</p>
+            |<p>
+            |  <strong>Spoofax version</strong>: ${sys.env.get("SPOOFAX_VERSION").getOrElse("master")}<br />
+            |  <strong>JSGLR version</strong>: ${sys.env.get("JSGLR_DIR").getOrElse("develop/jsglr2")}<br />
+            |  <strong>SDF version</strong>: ${sys.env.get("SDF_VERSION").getOrElse("develop/jsglr2")}
+            |</p>
             |${withNav("", tabs)}""".stripMargin
     )
 )
