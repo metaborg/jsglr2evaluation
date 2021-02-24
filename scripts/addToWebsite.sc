@@ -82,7 +82,11 @@ if (!dev) {
     val index = Jsoup.parse(new File(indexFile.toString), "UTF-8")
     val ul = index.select("#runs").first
 
-    val badges = suite.scopes.map(scope => s"""<span class="badge badge-primary badge-pill">$scope</span>""").mkString("\n")
+    val isTestRun = suite.warmupIterations <= 3 || suite.benchmarkIterations <= 3
+    val badges = (
+        suite.scopes.map(scope => s"""<span class="badge badge-primary badge-pill">$scope</span>""")
+        ++ (if (isTestRun) Seq("""<span class="badge badge-warning badge-pill">test-run</span>""") else Seq.empty)
+    ).mkString("\n")
     ul.prepend(
         s"""|<a href="./$id/index.html" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             |  $id
