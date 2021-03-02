@@ -15,7 +15,9 @@ case object Throughput extends BenchmarkType {
     def errorColumns = Seq("low" -> "Low", "high" -> "High")
 }
 
-def mean[B](xs: TraversableOnce[B])(implicit num: Integral[B]): Long = num.toLong(xs.sum) / xs.size
+def mean[B](xs: TraversableOnce[B])(implicit num: Integral[B]): Long =
+    num.toLong(xs.sum) / xs.size +
+        (if (2 * (num.toLong(xs.sum) % xs.size) >= xs.size) 1L else 0L) // Round up when fractional part would be >= 0.5
 
 def thousandSeparator[T](num: Any) = {
     val str = num.toString
@@ -56,11 +58,11 @@ def latexTableTestSetsIncremental(implicit suite: Suite) = {
                 val versionDir = sourceDir / version.toString
                 val files = (ls! versionDir)
                 (files.size.toLong, (files | read.lines | (_.size) sum).toLong, files | stat | (_.size) sum)
-            }.unzip3
-            val values = Iterator(files, lines, size, (size zip files) map { case (s, f) => s / f })
+            }.filter(_._1 != 0).unzip3
+            val values = Iterator(files, lines, size, (size zip files) map { case (s, f) => if (f == 0) 0 else s / f })
                 .map(v => thousandSeparator(mean(v).toString))
 
-            s"  & ${source.getName} & ${versions.size} & ${values.mkString(" & ")} \\\\"
+            s"  & ${source.getName} & ${files.size} & ${values.mkString(" & ")} \\\\"
         }
 
         s"""|\\multirow{${sources.size}}{*}{${language.name}}
@@ -212,7 +214,7 @@ def createMeasurementsTableSkew(
     val measurementsAvgRow = s"$avgsLabel & ${measurementsCellsSkew.map(texWrapper(cellMapper(avgs, avgPercs, header != "Version"))).mkString(" & ")}"
 
     val measurementsRows = ids.zip(rows zip percs).map { case (label, (row, perc)) =>
-        if (row.getOrElse("version", -1) == 0)
+        if (row.getOrElse("breakDowns", -1) == row.getOrElse("breakDownTemporary", -1))
             s"$label & ${thousandSeparator(row("createParseNode"))} & & & ${thousandSeparator(row("shiftParseNode"))} & ${thousandSeparator(row("shiftCharacterNode"))} & & & & &"
         else
             s"$label & ${measurementsCellsSkew.map(texWrapper(cellMapper(row, perc, header != "Version"))).mkString(" & ")}"
@@ -292,16 +294,22 @@ if (inScope("incremental")) {
 
     val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
 
+    mkdir! suite.figuresDir / "incremental"
     languagesWithIncrementalSources.foreach { language =>
+        mkdir! suite.figuresDir / "incremental" / language.id
         language.sources.incremental.foreach { source =>
+            mkdir! suite.figuresDir / "incremental" / language.id / s"${source.id}-parse"
+
             val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
             val n = rows.length
 
-            val ids = (0 to n).map(_.toString)
-            val skewIds = (0 to n).map(i => s"${if (i == 0) "~~" else i - 1} -> ${i}")
+            val ids = rows.map(_("version").toString)
+            val skewIds = s"~~ \\textrightarrow\\ ${rows(0)("version")}" +:
+                rows.drop(1).map(_("version")).map(i => s"${"~" * (i.toString.length - (i - 1).toString.length) * 2}${i - 1} \\textrightarrow\\ ${i}")
 
-            val avgsLabel = s"\\makecell{Average\\\\(0..${n - 2})}"
-            val skewAvgsLabel = s"\\makecell{Average\\\\(1..${n - 1})}"
+            val avgsLabel = s"\\makecell{Average\\\\(${ids(0)}..${ids.last.toInt - 1})}"
+            val skewAvgsLabel = s"\\makecell{Average\\\\(${ids(1)}..${ids.last})}"
+
 
             write.over(
                 suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental.tex",
@@ -341,9 +349,10 @@ if (inScope("incremental")) {
 
     val appendix =
         s"""|\\begin{table}[ht]
+            |    \\centering
             |    \\caption{Incremental parsing measurements for all languages.}
             |    \\label{tbl:incremental-measurements-all}
-            |    \\resizebox{\\linewidth}{!}{%
+            |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
             |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{0.5em}%
             |        \\input{\\generated/figures/incremental/measurements-parsing-incremental-skew}%
             |    }
@@ -355,24 +364,22 @@ if (inScope("incremental")) {
                     |
                     |\\section{${language.name}}
                     |
-                    |\\vfill
-                    |
-                    |\\begin{table}[H]
+                    |\\begin{table}[ht]
+                    |    \\centering
                     |    \\caption{Incremental parsing measurements for the ${language.name} language.}
                     |    \\label{tbl:incremental-measurements-${language.id}}
-                    |    \\resizebox{\\linewidth}{!}{%
+                    |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
                     |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{0.5em}%
                     |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental-skew}%
                     |    }
                     |\\end{table}
                     |
                     |${language.sources.incremental.map { source =>
-                        s"""|\\vfill
-                            |
-                            |\\begin{table}[H]
+                        s"""|\\begin{table}[ht]
+                            |    \\centering
                             |    \\caption{Incremental parsing measurements for ${language.name} source ${source.getName}.}
                             |    \\label{tbl:incremental-measurements-${language.id}-${source.id}}
-                            |    \\resizebox{\\linewidth}{!}{%
+                            |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
                             |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{0.5em}%
                             |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental-skew}%
                             |    }

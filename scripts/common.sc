@@ -67,7 +67,7 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
                 val measurementsCSV = measurementsDir / "incremental" / source.id / "parsing-incremental.csv"
                 val csvRows = CSV.parse(measurementsCSV).rows.map { row =>
                     row.values.map{ case k -> v => k -> v.toLong }
-                }
+                }.filter(_.values.size > 1) // Dropping empty rows
                 val csvRowsExceptLast = csvRows.dropRight(1)
                 val skewRows = csvRowsExceptLast.zip(csvRows.drop(1)).map { case (prevRow, row) =>
                     (prevRow - "version").map{ case k -> v => s"${k}Prev" -> v} ++ row

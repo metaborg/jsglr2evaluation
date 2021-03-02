@@ -240,7 +240,7 @@ val incrementalContent = if (inScope("incremental")) {
                 |</tr>""".stripMargin
 
         val measurementsRows = ids.zip(rows zip percs).map { case (label, (row, perc)) =>
-            if (row.getOrElse("version", -1) == 0) {
+            if (row.getOrElse("breakDowns", -1) == row.getOrElse("breakDownTemporary", -1)) {
                 s"""|<tr>
                     |  <td>$label</td>
                     |  <td>${row("createParseNode")}</td>
@@ -273,7 +273,7 @@ val incrementalContent = if (inScope("incremental")) {
             |    <th>Count</th>
             |    <th>${withTooltip("Irre&shy;usable", "Parse nodes that were broken down because they are irreusable, i.e., they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
             |    <th>${withTooltip("No Actions", "Parse nodes that were broken down because no actions were found in the parse table")}</th>
-            |    <th>${withTooltip("Temporary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
+            |    <th>${withTooltip("Tempo&shy;rary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
             |    <th>${withTooltip("Wrong State", "Parse nodes that were broken down because their saved parse state does not match the current state of the parser")}</th>
             |  </tr>
             |  ${indent(2, measurementsAvgRow)}
@@ -298,11 +298,12 @@ val incrementalContent = if (inScope("incremental")) {
             val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
             val n = rows.length
 
-            val ids = (0 to n).map(_.toString)
-            val skewIds = (0 to n).map(i => s"${if (i == 0) "&nbsp;&nbsp;" else i - 1} -> ${i}")
+            val ids = rows.map(_("version").toString)
+            val skewIds = s"&nbsp;&nbsp; -> ${rows(0)("version")}" +:
+                rows.drop(1).map(_("version")).map(i => s"${"&nbsp;" * (i.toString.length - (i - 1).toString.length) * 2}${i - 1} -> ${i}")
 
-            val avgsLabel = s"Average (0..${n - 2})"
-            val skewAvgsLabel = s"Average (1..${n - 1})"
+            val avgsLabel = s"Average (${ids(0)}..${ids.last.toInt - 1})"
+            val skewAvgsLabel = s"Average (${ids(1)}..${ids.last})"
 
             val measurementsTables = incrementalMeasurementsTables(
                 createMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
@@ -367,7 +368,7 @@ write.over(
         s"""|<p><strong>Iterations:</strong> ${suite.warmupIterations}/${suite.benchmarkIterations}</p>
             |<p>
             |  <strong>Spoofax version</strong>: ${sys.env.get("SPOOFAX_VERSION").getOrElse("master")}<br />
-            |  <strong>JSGLR version</strong>: ${sys.env.get("JSGLR_DIR").getOrElse("develop/jsglr2")}<br />
+            |  <strong>JSGLR version</strong>: ${sys.env.get("JSGLR_VERSION").getOrElse("develop/jsglr2")}<br />
             |  <strong>SDF version</strong>: ${sys.env.get("SDF_VERSION").getOrElse("develop/jsglr2")}
             |</p>
             |${withNav("", tabs)}""".stripMargin
