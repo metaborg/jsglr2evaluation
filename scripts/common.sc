@@ -396,7 +396,7 @@ implicit class SumMapsDouble(val maps: Seq[Map[String, Double]]) extends AnyVal 
 }
 
 object IncrementalMeasurementsTableUtils {
-    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesNonDeterministic", "characterNodes")
+    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesIrreusable", "characterNodes")
 
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
@@ -404,13 +404,13 @@ object IncrementalMeasurementsTableUtils {
     )
 
     val measurementsCellsSummary = Seq(
-        "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
+        "parseNodesIrreusable", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
         "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
     )
 
     val relativeTo = Map(
         "parseNodesAmbiguous" -> "parseNodes",
-        "parseNodesNonDeterministic" -> "parseNodes",
+        "parseNodesIrreusable" -> "parseNodes",
         "parseNodesReused" -> "parseNodesPrev",
         "parseNodesRebuilt" -> "parseNodesPrev",
         "breakDowns" -> "parseNodesPrev",

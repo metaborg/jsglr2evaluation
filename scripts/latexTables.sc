@@ -1,7 +1,6 @@
 import $ivy.`com.lihaoyi::ammonite-ops:2.2.0`, ammonite.ops._
 
 import $file.common, common._, Suite._
-import $file.spoofax, spoofax._
 
 println("LateX reporting...")
 
@@ -344,8 +343,8 @@ if (inScope("incremental")) {
     write.over(
         suite.figuresDir / "incremental" / "measurements-parsing-incremental-summary.tex",
         createMeasurementsTableSummary(languageNames,
-            rows.zip(skewRows).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesNonDeterministic")),
-            percs.zip(skewPercs).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesNonDeterministic"))))
+            rows.zip(skewRows).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesIrreusable")),
+            percs.zip(skewPercs).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesIrreusable"))))
 
     val appendix =
         s"""|\\begin{table}[ht]
