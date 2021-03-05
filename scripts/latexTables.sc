@@ -349,7 +349,7 @@ if (inScope("incremental")) {
     val appendix =
         s"""|\\begin{table}[ht]
             |    \\centering
-            |    \\caption{Incremental parsing measurements for all languages.}
+            |    \\legend{Incremental parsing measurements for all languages.}
             |    \\label{tbl:incremental-measurements-all}
             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
             |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{0.5em}%
@@ -359,13 +359,11 @@ if (inScope("incremental")) {
             |
             |
             |${languagesWithIncrementalSources.map { language =>
-                s"""|\\clearpage
-                    |
-                    |\\section{${language.name}}
+                s"""|\\section{${language.name}}
                     |
                     |\\begin{table}[ht]
                     |    \\centering
-                    |    \\caption{Incremental parsing measurements for the ${language.name} language.}
+                    |    \\legend{Incremental parsing measurements for the ${language.name} language.}
                     |    \\label{tbl:incremental-measurements-${language.id}}
                     |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
                     |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{0.5em}%
@@ -376,7 +374,7 @@ if (inScope("incremental")) {
                     |${language.sources.incremental.map { source =>
                         s"""|\\begin{table}[ht]
                             |    \\centering
-                            |    \\caption{Incremental parsing measurements for ${language.name} source ${source.getName}.}
+                            |    \\legend{Incremental parsing measurements for ${language.name} source ${source.getName}.}
                             |    \\label{tbl:incremental-measurements-${language.id}-${source.id}}
                             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
                             |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{0.5em}%
@@ -384,7 +382,7 @@ if (inScope("incremental")) {
                             |    }
                             |\\end{table}""".stripMargin
                      }.mkString("\n\n")}""".stripMargin
-             }.mkString("\n\n\n")}
+             }.mkString("\n\n\n\\clearpage\n\n")}
             |""".stripMargin
     write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-appendix.tex", appendix)
 }
