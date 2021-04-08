@@ -3,9 +3,10 @@
 ## Prerequisites
 
  - Java 8
- - Ammonite for Scala scripting: https://ammonite.io/
- - R: https://www.r-project.org/ (in particular, `Rscript`)
- - Python
+ - [Spoofax development environment](http://www.metaborg.org/en/latest/source/dev/index.html)
+ - [Ammonite]https://ammonite.io/ for Scala scripting
+ - [R](https://www.r-project.org/) (in particular, `Rscript`) for results processing
+ - Python for results processing
 
 ## Run
 

@@ -1,6 +1,6 @@
 # JSGLR2 Evaluation in Docker
 
-Requires [Docker](https://www.docker.com/get-started).
+Requires [Docker](https://www.docker.com/get-started) to be installed.
 
 Checkout this project on the machine where you want to run the evaluation:
 
