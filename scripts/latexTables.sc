@@ -272,12 +272,14 @@ mkdir! suite.figuresDir
 
 write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
 write.over(suite.figuresDir / "testsets-incremental.tex", latexTableTestSetsIncremental)
-write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
-write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
 
 if (inScope("batch")) {
+    write.over(suite.figuresDir / "parseforest.tex", latexTableParseForest)
+    write.over(suite.figuresDir / "determinism.tex", latexTableDeterminism)
+
     write.over(suite.figuresDir / "measurements-parsetables.tex", latexTableMeasurementsBatch(CSV.parse(parseTableMeasurementsPath)))
     write.over(suite.figuresDir / "measurements-parsing.tex",     latexTableMeasurementsBatch(CSV.parse(parsingMeasurementsPath)))
+
     Seq(
         InternalParse,
         Internal,
