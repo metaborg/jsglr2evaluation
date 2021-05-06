@@ -21,6 +21,7 @@ case class Config(
     variants: Seq[String] = Seq("jsglr1", "standard", "elkhound", "recovery", "incremental"),
     //variants: Seq[String] = Seq("jsglr1", "standard", "elkhound", "recovery", "recoveryElkhound", "incremental", "recoveryIncremental"),
     implode: Option[Boolean] = None,
+    individualSources: Option[Boolean] = None,
     languages: Seq[Language],
 )
 
@@ -205,7 +206,7 @@ case object External extends Comparison {
     def implode = true
 }
 
-case class Suite(configPath: Path, languages: Seq[Language], variants: Seq[String], dir: Path, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], implode: Option[Boolean], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
+case class Suite(configPath: Path, languages: Seq[Language], variants: Seq[String], dir: Path, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], implode: Option[Boolean], individualSources: Option[Boolean], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir        = dir / "languages"
     def sourcesDir          = dir / "sources"
     def measurementsDir     = dir / "measurements"
@@ -239,7 +240,7 @@ object Suite {
         val configJson = parser.parse(read! configPath)
         val config = configJson.flatMap(_.as[Config]).valueOr(throw _)
 
-        Suite(configPath, config.languages, config.variants, dir, config.warmupIterations, config.benchmarkIterations, config.batchSamples, config.shrinkBatchSources, config.implode, spoofaxDir, figuresDir, dev)
+        Suite(configPath, config.languages, config.variants, dir, config.warmupIterations, config.benchmarkIterations, config.batchSamples, config.shrinkBatchSources, config.implode, config.individualSources, spoofaxDir, figuresDir, dev)
     }
 
     implicit def languagesDir        = suite.languagesDir

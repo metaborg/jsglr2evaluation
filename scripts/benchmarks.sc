@@ -153,21 +153,25 @@ suite.languages.foreach { language =>
     }
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
-        suite.implode match {
-            case None =>
-                batchBenchmarks(false, None)
-                batchBenchmarks(true,  None)
-            case Some(implode) => 
-                batchBenchmarks(implode, None)
-        }
-
-        language.sourcesBatchNonEmpty.foreach { source =>
+        if (!suite.individualSources.getOrElse(false)) {
             suite.implode match {
                 case None =>
-                    batchBenchmarks(false, Some(source))
-                    batchBenchmarks(true,  Some(source))
+                    batchBenchmarks(false, None)
+                    batchBenchmarks(true,  None)
                 case Some(implode) => 
-                    batchBenchmarks(implode, Some(source))
+                    batchBenchmarks(implode, None)
+            }
+        }
+
+        if (suite.individualSources.getOrElse(true)) {
+            language.sourcesBatchNonEmpty.foreach { source =>
+                suite.implode match {
+                    case None =>
+                        batchBenchmarks(false, Some(source))
+                        batchBenchmarks(true,  Some(source))
+                    case Some(implode) => 
+                        batchBenchmarks(implode, Some(source))
+                }
             }
         }
     }
