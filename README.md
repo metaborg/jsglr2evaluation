@@ -36,7 +36,7 @@ When trying out the evaluation suite for the first time, one could use a simple 
 ```
 warmupIterations: 1
 benchmarkIterations: 1
-jsglr2variants:
+variants:
   - standard
 languages:
   - id: java
