@@ -30,7 +30,7 @@ When running the evaluation via Docker, dependencies will also be pulled into an
 By default, [scripts/config.yml](scripts/config.yml) serves as the configuration file for the evaluation.
 You can override the default configuration by putting a configuration file in the working directory, i.e. at `~/jsglr2evaluation-data/config.yml`.
 
-The default configuration includes multiple variants, languages, sources, and evaluation scopes (batch parsing, incremental parsing, memory measurements) and therefore takes a long to execute.
+The default configuration includes parsing with and without imploding, multiple variants, languages, sources, evaluation scopes (batch parsing, incremental parsing, memory measurements) and therefore takes a long to execute.
 When trying out the evaluation suite for the first time, one could use a simple configuration such as the following:
 
 ```
@@ -38,6 +38,7 @@ warmupIterations: 1
 benchmarkIterations: 1
 variants:
   - standard
+implode: true
 languages:
   - id: java
     name: Java

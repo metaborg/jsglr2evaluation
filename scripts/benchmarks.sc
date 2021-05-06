@@ -153,12 +153,22 @@ suite.languages.foreach { language =>
     }
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
-        batchBenchmarks(false, None)
-        batchBenchmarks(true,  None)
+        suite.implode match {
+            case None =>
+                batchBenchmarks(false, None)
+                batchBenchmarks(true,  None)
+            case Some(implode) => 
+                batchBenchmarks(implode, None)
+        }
 
         language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(false, Some(source))
-            batchBenchmarks(true,  Some(source))
+            suite.implode match {
+                case None =>
+                    batchBenchmarks(false, Some(source))
+                    batchBenchmarks(true,  Some(source))
+                case Some(implode) => 
+                    batchBenchmarks(implode, Some(source))
+            }
         }
     }
 
