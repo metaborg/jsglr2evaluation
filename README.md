@@ -36,6 +36,7 @@ When trying out the evaluation suite for the first time, one could use a simple 
 ```
 warmupIterations: 1
 benchmarkIterations: 1
+individualBatchSources: false
 languages:
   - id: java
     name: Java

@@ -17,8 +17,10 @@ Seq(
 
         %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id, figuresDir / "batch" / comparison.dir / language.id, comparison.name)(pwd)
 
-        language.sourcesBatchNonEmpty.map { source =>
-            %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id / source.id, figuresDir / "batch" / comparison.dir / language.id / source.id, comparison.name)(pwd)
+        if (suite.individualBatchSources) {
+            language.sourcesBatchNonEmpty.map { source =>
+                %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id / source.id, figuresDir / "batch" / comparison.dir / language.id / source.id, comparison.name)(pwd)
+            }
         }
     }
 }

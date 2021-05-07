@@ -42,13 +42,15 @@ if (languagesWithBatchSources.nonEmpty) {
             write.over(languageResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
             write.over(languageResultsDir / "throughput.csv", "language,variant,score,low,high\n")
             
-            language.sourcesBatchNonEmpty.foreach { source =>
-                val sourceResultsDir = batchResultsDir / comparison.dir / language.id / source.id
+            if (suite.individualBatchSources) {
+                language.sourcesBatchNonEmpty.foreach { source =>
+                    val sourceResultsDir = batchResultsDir / comparison.dir / language.id / source.id
 
-                mkdir! sourceResultsDir
+                    mkdir! sourceResultsDir
 
-                write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
-                write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+                    write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+                    write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+                }
             }
         }
     }
@@ -131,10 +133,12 @@ suite.languages.foreach { language =>
         batchBenchmarks(Internal,      None)
         batchBenchmarks(External,      None)
 
-        language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(InternalParse, Some(source))
-            batchBenchmarks(Internal,      Some(source))
-            batchBenchmarks(External,      Some(source))
+        if (suite.individualBatchSources) {
+            language.sourcesBatchNonEmpty.foreach { source =>
+                batchBenchmarks(InternalParse, Some(source))
+                batchBenchmarks(Internal,      Some(source))
+                batchBenchmarks(External,      Some(source))
+            }
         }
 
         // Benchmarks (batch sampled)

@@ -114,11 +114,13 @@ suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
     if (exists! language.sourcesDir / "batch" / "sizes.png")
         cp.over(language.sourcesDir / "batch" / "sizes.png", dir / "figures" / "batch" / language.id / "sizes.png")
 
-    language.sourcesBatchNonEmpty.map { source =>
-        mkdir! dir / "figures" / "batch" / language.id / source.id
+    if (suite.individualBatchSources) {
+        language.sourcesBatchNonEmpty.map { source =>
+            mkdir! dir / "figures" / "batch" / language.id / source.id
 
-        if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
-            cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "figures" / "batch" / language.id / source.id / "sizes.png")
+            if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
+                cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "figures" / "batch" / language.id / source.id / "sizes.png")
+        }
     }
 }
 
@@ -158,10 +160,11 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
 
 def batchLanguageContent(language: Language) = {
     val parseTableMeasurements = language.measurementsParseTable
-    val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
-        language.sourcesBatchNonEmpty.map { source =>
-            (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source)))
-        }
+    val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +: (
+        if (suite.individualBatchSources)
+            language.sourcesBatchNonEmpty.map(source => (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source))))
+        else 
+            Seq())
 
     s"""|<div class="row">
         |  <div class="col-sm">

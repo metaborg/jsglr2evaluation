@@ -156,9 +156,11 @@ suite.languages.foreach { language =>
         batchBenchmarks(false, None)
         batchBenchmarks(true,  None)
 
-        language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(false, Some(source))
-            batchBenchmarks(true,  Some(source))
+        if (suite.individualBatchSources) {
+            language.sourcesBatchNonEmpty.foreach { source =>
+                batchBenchmarks(false, Some(source))
+                batchBenchmarks(true,  Some(source))
+            }
         }
     }
 
