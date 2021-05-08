@@ -131,12 +131,16 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
     val optimizedParseForestMeasurements = language.measurementsBatch(source, "optimized-pf")
     val elkhoundMeasurements             = language.measurementsBatch(source, "elkhound")
 
-    s"""|<div class="row">
-        |  <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
-        |</div>
+    s"""|<div class="row">""" + 
+        (if (!suite.implode.getOrElse(false)) 
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>"""
+        else "") +
+        (if (suite.implode.getOrElse(true)) 
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+                |  <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>"""
+        else "") +
+    s"""|  <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>""" +
+    s"""|</div>
         |<div class="row">
         |  <div class="col-sm">
         |    <h3>Full parse forest</h3>
@@ -179,11 +183,15 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 }
 
 def batchContent =
-    s"""|<div class="row">
-        |  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
+    s"""|<div class="row">""" +
+        (if (!suite.implode.getOrElse(false))
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>"""
+        else "") +
+        (if (suite.implode.getOrElse(true))
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
+                |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>"""
+        else "") +
+    s"""|  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
         |</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 

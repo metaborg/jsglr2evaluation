@@ -6,9 +6,7 @@ import $file.spoofax, spoofax._
 println("Generating batch plots...")
 
 Seq(
-    InternalParse,
-    Internal,
-    External
+    InternalParse
 ).map { comparison =>
     %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir, figuresDir / "batch" / comparison.dir, comparison.name)(pwd)
 

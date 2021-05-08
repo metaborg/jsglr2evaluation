@@ -283,7 +283,7 @@ if (inScope("batch")) {
         InternalParse,
         Internal,
         External
-    ).map { comparison =>
+    ).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map { comparison =>
         write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-time.tex",          latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "time.csv"),       Time))
         write.over(suite.figuresDir / s"benchmarks-${comparison.dir}-throughput.tex",    latexTableBenchmarks(CSV.parse(batchResultsDir / comparison.dir / "throughput.csv"), Throughput))
     }

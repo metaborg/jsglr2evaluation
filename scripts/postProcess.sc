@@ -28,7 +28,11 @@ if (languagesWithBatchSources.nonEmpty) {
     // Setup header for benchmarks CSV
     mkdir! batchResultsDir
     
-    Seq(InternalParse, Internal, External).map { comparison =>
+    Seq(
+        InternalParse, 
+        Internal, 
+        External
+    ).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map { comparison =>
         mkdir! batchResultsDir / comparison.dir
         
         write.over(batchResultsDir / comparison.dir / "time.csv",       "language,variant,score,error,low,high\n")
@@ -129,17 +133,19 @@ suite.languages.foreach { language =>
             }
         }
 
-        batchBenchmarks(InternalParse, None)
-        batchBenchmarks(Internal,      None)
-        batchBenchmarks(External,      None)
+        Seq(
+            InternalParse,
+            Internal,
+            External
+        ).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map(comparison => {
+            batchBenchmarks(comparison, None)
 
-        if (suite.individualBatchSources) {
-            language.sourcesBatchNonEmpty.foreach { source =>
-                batchBenchmarks(InternalParse, Some(source))
-                batchBenchmarks(Internal,      Some(source))
-                batchBenchmarks(External,      Some(source))
+            if (suite.individualBatchSources) {
+                language.sourcesBatchNonEmpty.foreach { source =>
+                    batchBenchmarks(comparison, Some(source))
+                }
             }
-        }
+        })
 
         // Benchmarks (batch sampled)
 

@@ -153,13 +153,23 @@ suite.languages.foreach { language =>
     }
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
-        batchBenchmarks(false, None)
-        batchBenchmarks(true,  None)
+        if (!suite.implode.getOrElse(false)) {
+            batchBenchmarks(false, None)
+        }
+
+        if (suite.implode.getOrElse(true)) {
+            batchBenchmarks(true, None)
+        }
 
         if (suite.individualBatchSources) {
             language.sourcesBatchNonEmpty.foreach { source =>
-                batchBenchmarks(false, Some(source))
-                batchBenchmarks(true,  Some(source))
+                if (!suite.implode.getOrElse(false)) {
+                    batchBenchmarks(false, Some(source))
+                }
+
+                if (suite.implode.getOrElse(true)) {
+                    batchBenchmarks(true, Some(source))
+                }
             }
         }
     }
