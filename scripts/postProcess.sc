@@ -121,8 +121,11 @@ suite.languages.foreach { language =>
 
             resultsDirs.foreach { resultsDir =>
                 processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                
+
+                if (suite.variants.contains("jsglr1")) {
+                    processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _ => "jsglr1", resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                }
+
                 if (comparison == External) {
                     language.antlrBenchmarks.foreach { antlrBenchmark =>
                         processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)

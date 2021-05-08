@@ -130,11 +130,13 @@ suite.languages.foreach { language =>
         mkdir! reportDir
         
         timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-            benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> implode.toString, "variant" -> suite.jsglr2variants.mkString(",")))
+            benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> implode.toString, "variant" -> suite.variants.filter(_ != "jsglr1").mkString(",")))
         }
 
-        timed(s"benchmark [JSGLR1/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-            benchmarkJSGLR("JSGLR1BenchmarkExternal", reportDir / "jsglr1.csv", sourcesDir, "multiple", Map("implode" -> implode.toString))
+        if (suite.variants.contains("jsglr1")) {
+            timed(s"benchmark [JSGLR1/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
+                benchmarkJSGLR("JSGLR1BenchmarkExternal", reportDir / "jsglr1.csv", sourcesDir, "multiple", Map("implode" -> implode.toString))
+            }
         }
 
         if (implode) {

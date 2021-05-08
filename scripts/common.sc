@@ -20,8 +20,8 @@ case class Config(
     shrinkBatchSources: Option[Int] = None,
     individualBatchSources: Boolean = true,
     implode: Option[Boolean],
-    jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "incremental"),
-    //jsglr2variants: Seq[String] = Seq("standard", "elkhound", "recovery", "recoveryElkhound", "incremental", "recoveryIncremental"),
+    variants: Seq[String] = Seq("standard", "elkhound", "recovery", "incremental", "jsglr1"),
+    //variants: Seq[String] = Seq("standard", "elkhound", "recovery", "recoveryElkhound", "incremental", "recoveryIncremental", "jsglr1"),
     languages: Seq[Language],
 )
 
@@ -210,7 +210,7 @@ case object External extends Comparison {
     def implode = true
 }
 
-case class Suite(configPath: Path, languages: Seq[Language], jsglr2variants: Seq[String], dir: Path, implode: Option[Boolean], individualBatchSources: Boolean, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Option[Int], shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
+case class Suite(configPath: Path, languages: Seq[Language], variants: Seq[String], dir: Path, implode: Option[Boolean], individualBatchSources: Boolean, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Option[Int], shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir        = dir / "languages"
     def sourcesDir          = dir / "sources"
     def measurementsDir     = dir / "measurements"
@@ -244,7 +244,7 @@ object Suite {
         val configJson = parser.parse(read! configPath)
         val config = configJson.flatMap(_.as[Config]).valueOr(throw _)
 
-        Suite(configPath, config.languages, config.jsglr2variants, dir,config.implode, config.individualBatchSources,  config.warmupIterations, config.benchmarkIterations, config.batchSamples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
+        Suite(configPath, config.languages, config.variants, dir,config.implode, config.individualBatchSources,  config.warmupIterations, config.benchmarkIterations, config.batchSamples, config.shrinkBatchSources, spoofaxDir, figuresDir, dev)
     }
 
     implicit def languagesDir        = suite.languagesDir
