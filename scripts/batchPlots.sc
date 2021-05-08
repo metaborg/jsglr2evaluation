@@ -23,4 +23,6 @@ Seq(
     }
 }
 
-%("Rscript", "batchSampledPlots.R", batchSampledResultsDir, figuresDir / "batch-sampled")(pwd)
+if (exists! batchSampledResultsDir) {
+    %("Rscript", "batchSampledPlots.R", batchSampledResultsDir, figuresDir / "batch-sampled")(pwd)
+}

@@ -190,9 +190,10 @@ def batchContent =
         (if (suite.implode.getOrElse(true))
             s"""|  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
                 |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>"""
+        else "") + (if (!suite.batchSamples.isDefined)
+            s"""|  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>"""
         else "") +
-    s"""|  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
-        |</div>
+    s"""|</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 
 val incrementalContent = if (inScope("incremental")) {

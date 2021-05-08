@@ -16,7 +16,7 @@ implicit val customConfig: Configuration = Configuration.default.withDefaults
 case class Config(
     warmupIterations: Int = 1,
     benchmarkIterations: Int = 1,
-    batchSamples: Int = 1,
+    batchSamples: Option[Int] = None,
     shrinkBatchSources: Option[Int] = None,
     individualBatchSources: Boolean = true,
     implode: Option[Boolean],
@@ -103,21 +103,25 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         }
     
     def sourceFilesBatchSampled(implicit suite: Suite): Seq[Path] = {
-        val files = sourceFilesBatch() sortBy(-_.size)
-        val trimPercentage: Float = 10F
-
-        val from = (trimPercentage / 100F) * files.size
-        val to = ((100F - trimPercentage) / 100F) * files.size
-
-        val filesTrimmed = files.slice(from.round, to.round)
-
-        val fileCount = filesTrimmed.size
-        val step = fileCount / suite.batchSamples
-
-        if (fileCount > 0)
-            for (i <- 0 until suite.batchSamples) yield filesTrimmed(i * step)
-        else
+        if (suite.batchSamples.isEmpty)
             Nil
+        else {
+            val files = sourceFilesBatch() sortBy(-_.size)
+            val trimPercentage: Float = 10F
+
+            val from = (trimPercentage / 100F) * files.size
+            val to = ((100F - trimPercentage) / 100F) * files.size
+
+            val filesTrimmed = files.slice(from.round, to.round)
+
+            val fileCount = filesTrimmed.size
+            val step = fileCount / suite.batchSamples.get
+
+            if (fileCount > 0)
+                for (i <- 0 until suite.batchSamples.get) yield filesTrimmed(i * step)
+            else
+                Nil
+        }
     }
 
     def sourceFilesIncremental(implicit suite: Suite) = ls.rec! sourcesDir / "incremental" |? (_.ext == extension)
@@ -206,7 +210,7 @@ case object External extends Comparison {
     def implode = true
 }
 
-case class Suite(configPath: Path, languages: Seq[Language], jsglr2variants: Seq[String], dir: Path, implode: Option[Boolean], individualBatchSources: Boolean, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Int, shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
+case class Suite(configPath: Path, languages: Seq[Language], jsglr2variants: Seq[String], dir: Path, implode: Option[Boolean], individualBatchSources: Boolean, warmupIterations: Int, benchmarkIterations: Int, batchSamples: Option[Int], shrinkBatchSources: Option[Int], spoofaxDir: Path, figuresDir: Path, dev: Boolean) {
     def languagesDir        = dir / "languages"
     def sourcesDir          = dir / "sources"
     def measurementsDir     = dir / "measurements"
