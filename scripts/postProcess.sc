@@ -32,7 +32,7 @@ if (languagesWithBatchSources.nonEmpty) {
         InternalParse, 
         Internal, 
         External
-    ).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map { comparison =>
+    ).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map { comparison =>
         mkdir! batchResultsDir / comparison.dir
         
         write.over(batchResultsDir / comparison.dir / "time.csv",       "language,variant,score,error,low,high\n")
@@ -142,7 +142,7 @@ suite.languages.foreach { language =>
             InternalParse,
             Internal,
             External
-        ).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map(comparison => {
+        ).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map(comparison => {
             batchBenchmarks(comparison, None)
 
             if (suite.individualBatchSources) {

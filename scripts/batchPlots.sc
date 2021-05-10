@@ -9,7 +9,7 @@ Seq(
     InternalParse, 
     Internal, 
     External
-).filter(comparison => comparison.implode == suite.implode.getOrElse(comparison.implode)).map { comparison =>
+).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map { comparison =>
     %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir, figuresDir / "batch" / comparison.dir, comparison.name)(pwd)
 
     suite.languages.foreach { language =>
