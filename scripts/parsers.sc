@@ -135,7 +135,7 @@ object Parser {
         TokenizerVariant.standard()
     )
 
-    def jsglr2variants(language: Language)(implicit suite: Suite): Seq[Parser] = suite.jsglr2variants.map(_ match {
+    def jsglr2variants(language: Language)(implicit suite: Suite): Seq[Parser] = suite.variants.filter(_ != "jsglr1").map(_ match {
         case "standard"            => JSGLR2Parser(language, JSGLR2Variant.Preset.standard, false)
         case "elkhound"            => JSGLR2Parser(language, JSGLR2Variant.Preset.elkhound, false)
         case "incremental"         => JSGLR2Parser(language, JSGLR2Variant.Preset.incremental, true)
