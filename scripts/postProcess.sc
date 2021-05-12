@@ -58,8 +58,8 @@ if (languagesWithBatchSources.nonEmpty) {
             }
         }
     }
-
-    if (suite.batchSamples.isDefined) {
+    
+    if (suite.languages.exists(exists! _.benchmarksDir / "batch-sampled")) {
         mkdir! batchSampledResultsDir
         write.over(batchSampledResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
         write.over(batchSampledResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
@@ -68,7 +68,7 @@ if (languagesWithBatchSources.nonEmpty) {
 
 // Normalization: chars / ms == 1000 chars / s
 
-suite.languages.foreach { language =>
+suite.languages.foreach { language => 
     println(" " + language.name)
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
