@@ -61,8 +61,10 @@ suite.languages.foreach { language =>
     if (language.sourcesBatchNonEmpty.nonEmpty) {
         batchMeasurements(None)
 
-        language.sourcesBatchNonEmpty.map { source =>
-            batchMeasurements(Some(source))
+        if (suite.individualBatchSources) {
+            language.sourcesBatchNonEmpty.map { source =>
+                batchMeasurements(Some(source))
+            }
         }
     }
 

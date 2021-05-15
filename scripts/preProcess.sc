@@ -110,7 +110,7 @@ object PreProcessing {
                     }
                 }
 
-                if (suite.jsglr2variants.contains("recovery")) {
+                if (suite.variants.contains("recovery")) {
                     val recoveringJSGLR2 = parsers.find {
                         case parser: JSGLR2Parser => parser.name == "recovery"
                         case _ => false

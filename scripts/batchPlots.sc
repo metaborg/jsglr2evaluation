@@ -6,10 +6,10 @@ import $file.spoofax, spoofax._
 println("Generating batch plots...")
 
 Seq(
-    InternalParse,
-    Internal,
+    InternalParse, 
+    Internal, 
     External
-).map { comparison =>
+).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map { comparison =>
     %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir, figuresDir / "batch" / comparison.dir, comparison.name)(pwd)
 
     suite.languages.foreach { language =>
@@ -17,10 +17,14 @@ Seq(
 
         %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id, figuresDir / "batch" / comparison.dir / language.id, comparison.name)(pwd)
 
-        language.sourcesBatchNonEmpty.map { source =>
-            %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id / source.id, figuresDir / "batch" / comparison.dir / language.id / source.id, comparison.name)(pwd)
+        if (suite.individualBatchSources) {
+            language.sourcesBatchNonEmpty.map { source =>
+                %("Rscript", "batchPlots.R", batchResultsDir / comparison.dir / language.id / source.id, figuresDir / "batch" / comparison.dir / language.id / source.id, comparison.name)(pwd)
+            }
         }
     }
 }
 
-%("Rscript", "batchSampledPlots.R", batchSampledResultsDir, figuresDir / "batch-sampled")(pwd)
+if (exists! batchSampledResultsDir) {
+    %("Rscript", "batchSampledPlots.R", batchSampledResultsDir, figuresDir / "batch-sampled")(pwd)
+}

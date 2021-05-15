@@ -114,11 +114,13 @@ suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { language =>
     if (exists! language.sourcesDir / "batch" / "sizes.png")
         cp.over(language.sourcesDir / "batch" / "sizes.png", dir / "figures" / "batch" / language.id / "sizes.png")
 
-    language.sourcesBatchNonEmpty.map { source =>
-        mkdir! dir / "figures" / "batch" / language.id / source.id
+    if (suite.individualBatchSources) {
+        language.sourcesBatchNonEmpty.map { source =>
+            mkdir! dir / "figures" / "batch" / language.id / source.id
 
-        if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
-            cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "figures" / "batch" / language.id / source.id / "sizes.png")
+            if (exists! language.sourcesDir / "batch" / source.id / "sizes.png")
+                cp.over(language.sourcesDir / "batch" / source.id / "sizes.png", dir / "figures" / "batch" / language.id / source.id / "sizes.png")
+        }
     }
 }
 
@@ -129,12 +131,16 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
     val optimizedParseForestMeasurements = language.measurementsBatch(source, "optimized-pf")
     val elkhoundMeasurements             = language.measurementsBatch(source, "elkhound")
 
-    s"""|<div class="row">
-        |  <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
-        |  <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>
-        |</div>
+    s"""|<div class="row">""" + 
+        (if (suite.implode.fold(true)(_ == false)) 
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>"""
+        else "") +
+        (if (suite.implode.fold(true)(_ == true)) 
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>
+                |  <div class="col-sm"><img src="./figures/batch/external/${language.id}${source.fold("")("/" + _.id)}/throughput.png" /></p></div>"""
+        else "") +
+    s"""|  <div class="col-sm"><img src="./figures/batch/${language.id}${source.fold("")("/" + _.id)}/sizes.png" /></p></div>""" +
+    s"""|</div>
         |<div class="row">
         |  <div class="col-sm">
         |    <h3>Full parse forest</h3>
@@ -158,10 +164,11 @@ def batchSourceTabContent(language: Language, source: Option[BatchSource]) = {
 
 def batchLanguageContent(language: Language) = {
     val parseTableMeasurements = language.measurementsParseTable
-    val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +:
-        language.sourcesBatchNonEmpty.map { source =>
-            (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source)))
-        }
+    val sourcesTabs = (s"batch-${language.id}-all", "All", batchSourceTabContent(language, None)) +: (
+        if (suite.individualBatchSources)
+            language.sourcesBatchNonEmpty.map(source => (s"batch-${language.id}-${source.id}", source.getName, batchSourceTabContent(language, Some(source))))
+        else 
+            Nil)
 
     s"""|<div class="row">
         |  <div class="col-sm">
@@ -176,12 +183,17 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
 }
 
 def batchContent =
-    s"""|<div class="row">
-        |  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>
-        |  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>
-        |</div>
+    s"""|<div class="row">""" +
+        (if (suite.implode.fold(true)(_ == false))
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>"""
+        else "") +
+        (if (suite.implode.fold(true)(_ == true))
+            s"""|  <div class="col-sm"><img src="./figures/batch/internal/throughput.png" /></div>
+                |  <div class="col-sm"><img src="./figures/batch/external/throughput.png" /></div>"""
+        else "") + (if (!suite.batchSamples.isDefined)
+            s"""|  <div class="col-sm"><img src="./figures/batch-sampled/throughput.png" /></div>"""
+        else "") +
+    s"""|</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
 
 val incrementalContent = if (inScope("incremental")) {

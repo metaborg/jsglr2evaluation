@@ -44,7 +44,7 @@ suite.languages.foreach { language =>
             params
         )
 
-    if (language.sourcesBatchNonEmpty.nonEmpty) {
+    if (language.sourceFilesBatchSampled.nonEmpty) {
         timed(s"benchmark [JSGLR2/batch-sampled] (w: $warmupIterations, i: $benchmarkIterations) " + language.id) {
             mkdir ! (language.benchmarksDir / "batch-sampled")
 

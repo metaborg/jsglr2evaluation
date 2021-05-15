@@ -28,7 +28,11 @@ if (languagesWithBatchSources.nonEmpty) {
     // Setup header for benchmarks CSV
     mkdir! batchResultsDir
     
-    Seq(InternalParse, Internal, External).map { comparison =>
+    Seq(
+        InternalParse, 
+        Internal, 
+        External
+    ).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map { comparison =>
         mkdir! batchResultsDir / comparison.dir
         
         write.over(batchResultsDir / comparison.dir / "time.csv",       "language,variant,score,error,low,high\n")
@@ -42,25 +46,29 @@ if (languagesWithBatchSources.nonEmpty) {
             write.over(languageResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
             write.over(languageResultsDir / "throughput.csv", "language,variant,score,low,high\n")
             
-            language.sourcesBatchNonEmpty.foreach { source =>
-                val sourceResultsDir = batchResultsDir / comparison.dir / language.id / source.id
+            if (suite.individualBatchSources) {
+                language.sourcesBatchNonEmpty.foreach { source =>
+                    val sourceResultsDir = batchResultsDir / comparison.dir / language.id / source.id
 
-                mkdir! sourceResultsDir
+                    mkdir! sourceResultsDir
 
-                write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
-                write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+                    write.over(sourceResultsDir / "time.csv",       "language,variant,score,error,low,high\n")
+                    write.over(sourceResultsDir / "throughput.csv", "language,variant,score,low,high\n")
+                }
             }
         }
     }
-
-    mkdir! batchSampledResultsDir
-    write.over(batchSampledResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
-    write.over(batchSampledResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
+    
+    if (suite.languages.exists(exists! _.benchmarksDir / "batch-sampled")) {
+        mkdir! batchSampledResultsDir
+        write.over(batchSampledResultsDir / "time.csv",       "language,variant,score,error,low,high,size\n")
+        write.over(batchSampledResultsDir / "throughput.csv", "language,variant,score,low,high,size\n")
+    }
 }
 
 // Normalization: chars / ms == 1000 chars / s
 
-suite.languages.foreach { language =>
+suite.languages.foreach { language => 
     println(" " + language.name)
 
     if (language.sourcesBatchNonEmpty.nonEmpty) {
@@ -113,8 +121,11 @@ suite.languages.foreach { language =>
 
             resultsDirs.foreach { resultsDir =>
                 processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr2.csv"), row => row("Param: variant"), resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _   => "jsglr1",              resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
-                
+
+                if (suite.variants.contains("jsglr1")) {
+                    processBenchmarkCSV(CSV.parse(benchmarksDir / "jsglr1.csv"), _ => "jsglr1", resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
+                }
+
                 if (comparison == External) {
                     language.antlrBenchmarks.foreach { antlrBenchmark =>
                         processBenchmarkCSV(CSV.parse(benchmarksDir / s"${antlrBenchmark.id}.csv"), _ => antlrBenchmark.id, resultsDir / "time.csv", resultsDir / "throughput.csv", normalize)
@@ -127,15 +138,19 @@ suite.languages.foreach { language =>
             }
         }
 
-        batchBenchmarks(InternalParse, None)
-        batchBenchmarks(Internal,      None)
-        batchBenchmarks(External,      None)
+        Seq(
+            InternalParse,
+            Internal,
+            External
+        ).filter(comparison => suite.implode.fold(true)(_ == comparison.implode)).map(comparison => {
+            batchBenchmarks(comparison, None)
 
-        language.sourcesBatchNonEmpty.foreach { source =>
-            batchBenchmarks(InternalParse, Some(source))
-            batchBenchmarks(Internal,      Some(source))
-            batchBenchmarks(External,      Some(source))
-        }
+            if (suite.individualBatchSources) {
+                language.sourcesBatchNonEmpty.foreach { source =>
+                    batchBenchmarks(comparison, Some(source))
+                }
+            }
+        })
 
         // Benchmarks (batch sampled)
 
