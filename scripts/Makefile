@@ -144,6 +144,13 @@ archive:
 cleanArchive:
 	-rm $(DATA_DIR)/archive.tar.gz
 
+mail: archive
+	curl --request POST \
+  		--url https://api.sendgrid.com/v3/mail/send \
+  		--header 'authorization: Bearer $(SENDGRID_TOKEN)' \
+  		--header 'Content-Type: application/json' \
+  		--data '{"personalizations": [{"to": [{"email": "$(EMAIL)"}]}],"from": {"email": "j.denkers@tudelft.nl"},"subject":"JSGLR2 Evaluation Results","content": [{"type": "text/html","value": ""}], "attachments": [{"content": "'"$( base64 $(DATA_DIR)/archive.tar.gz )"'", "type": "application/gzip", "filename": "archive.tar.gz"}]}'
+
 websiteRepo:
 	if [ ! -d $(DATA_DIR)/website/.git ]; then git clone https://$(GITHUB_TOKEN)@github.com/metaborg/jsglr2evaluation-site.git $(DATA_DIR)/website; fi
 	cd $(DATA_DIR)/website && git pull --rebase
