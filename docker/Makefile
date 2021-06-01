@@ -28,7 +28,9 @@ pull-sdf: pull-spoofax-releng
 pull-jsglr: pull-spoofax-releng
 	cd /jsglr2evaluation/data/spoofax/jsglr && git config remote.$(JSGLR_REMOTE_NAME).url >&- || git remote add $(JSGLR_REMOTE_NAME) $(JSGLR_REMOTE_URL)
 	cd /jsglr2evaluation/data/spoofax/jsglr && git fetch $(JSGLR_REMOTE_NAME)
-	cd /jsglr2evaluation/data/spoofax/jsglr && git checkout $(JSGLR_REMOTE_NAME)/$(JSGLR_VERSION) && git pull
+	cd /jsglr2evaluation/data/spoofax/jsglr && (git switch $(JSGLR_VERSION) || git switch -c $(JSGLR_VERSION))
+	cd /jsglr2evaluation/data/spoofax/jsglr && git branch -u $(JSGLR_REMOTE_NAME)/$(JSGLR_VERSION)
+	cd /jsglr2evaluation/data/spoofax/jsglr && git pull
 
 
 build-spoofax: pull-sdf pull-jsglr
