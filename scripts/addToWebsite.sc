@@ -50,7 +50,7 @@ def withTemplate(title: String, config: String, content: String) =
         |    <div class="row">
         |      <div class="col">
         |        <p><a href="../index.html">&larr; Back to index</a></p>
-        |        <h1>$id</h1>
+        |        <h1>$date</h1>
         |        <p><a href="./archive.tar.gz" class="btn btn-primary">Download Archive</a></p>
         |        <details>
         |          <summary>Contents of <code>config.yml</code></summary>
@@ -72,9 +72,10 @@ def withTemplate(title: String, config: String, content: String) =
 
 def removeCommentedLines(text: String) = text.replaceAll("[ \t\r]*\n[ \t]*#[^\n]+", "")
 
-val id = if (dev) "dev" else ZonedDateTime.now(ZoneId.of("Europe/Amsterdam")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+val date = if (dev) "dev" else ZonedDateTime.now(ZoneId.of("Europe/Amsterdam")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+val dateId = date.replace(" ", "_")
 
-val dir = websiteDir / id
+val dir = websiteDir / dateId
 
 if (!dev) {
     val indexFile = websiteDir / "index.html"
@@ -88,8 +89,8 @@ if (!dev) {
         ++ (if (isTestRun) Seq("""<span class="badge badge-warning badge-pill">test-run</span>""") else Seq.empty)
     ).mkString("\n")
     ul.prepend(
-        s"""|<a href="./$id/index.html" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-            |  $id
+        s"""|<a href="./$dateId/index.html" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            |  $date
             |  <span>
             |    ${indent(4, badges)}
             |  </span>
@@ -376,7 +377,7 @@ val tabs = Seq(
 
 write.over(
     dir / "index.html",
-    withTemplate(id, config,
+    withTemplate(date, config,
         s"""|<p><strong>Iterations:</strong> ${suite.warmupIterations}/${suite.benchmarkIterations}</p>
             |<p>
             |  <strong>Spoofax version</strong>: ${sys.env.get("SPOOFAX_VERSION").getOrElse("master")}<br />

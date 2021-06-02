@@ -9,7 +9,7 @@ DATA_DIR = environ["JSGLR2EVALUATION_DATA_DIR"]
 FIGURES_DIR = environ["JSGLR2EVALUATION_FIGURES_DIR"]
 
 COLORS = {
-    "Batch": "rs",
+    "Standard": "rs",
     "Elkhound": "pm",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
@@ -18,7 +18,7 @@ COLORS = {
 }
 
 LABELS = {
-    "jsglr2-standard": "Batch",
+    "jsglr2-standard": "Standard",
     "jsglr2-elkhound": "Elkhound",
     "jsglr2-incremental": "IncrementalNoCache"
 }
@@ -198,7 +198,8 @@ def plot_times_vs_changes_3d(rows):
 def parser_types(include_batch=True, include_tree_sitter=False):
     types = []
     if include_batch:
-        types.append("Batch")
+        types.append("Standard")
+        types.append("Elkhound")
     types.append("Incremental")
     if include_batch:
         types.append("IncrementalNoCache")
@@ -224,7 +225,7 @@ def main():
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
-                if len([x for x in result_data if x["Batch"] or x["Incremental"] or x["IncrementalNoCache"]]) <= 0:
+                if len([x for x in result_data if any(x[parser_type] for parser_type in parser_types())]) <= 0:
                     print("    No data found, skipping")
                     continue
 

@@ -166,7 +166,7 @@ suite.languages.foreach { language =>
 
     // Benchmarks (incremental)
 
-    val parserTypes = Seq("Batch", "Incremental", "IncrementalNoCache")
+    val parserTypes = Seq("Standard", "Elkhound", "Incremental", "IncrementalNoCache")
     language.sources.incremental.foreach { source => {
         Map(false -> "parse", true -> "parse+implode").foreach { case (implode, parseImplodeStr) =>
             mkdir! incrementalResultsDir / language.id
@@ -177,7 +177,7 @@ suite.languages.foreach { language =>
             parserTypes.foreach { parserType =>
                 write.append(resultPath, s""","$parserType","$parserType Error (99.9%)"""")
             }
-            parserTypes.filter(_ != "Batch").foreach { parserType =>
+            parserTypes.filter(_.contains("Incremental")).foreach { parserType =>
                 write.append(resultPath, s""","TreeSitter$parserType","TreeSitter$parserType Error (99.9%)"""")
             }
             write.append(resultPath, ""","Size (bytes)","Removed","Added","Changes"""" + "\n")
@@ -207,7 +207,7 @@ suite.languages.foreach { language =>
                     })
                 }
 
-                parserTypes.filter(_ != "Batch").foreach { parserType =>
+                parserTypes.filter(_.contains("Incremental")).foreach { parserType =>
                     write.append(resultPath, rowsTreeSitter.find(_("Param: parserType") == parserType) match {
                         case Some(row) => "," + row("Score") + "," + row("Score Error (99.9%)").replace("NaN", "")
                         case None => ",,"

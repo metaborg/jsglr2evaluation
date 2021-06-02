@@ -388,15 +388,15 @@ implicit class SumMapsLong(val maps: Seq[Map[String, Long]]) extends AnyVal {
 implicit class SumMapsDouble(val maps: Seq[Map[String, Double]]) extends AnyVal {
     def sumMaps(): Map[String, Double] =
         maps.fold(Map[String, Double]()) { (acc, row) =>
-            row.keys.map(k => k -> (acc.getOrElse(k, 0.0) + row(k))).toMap
+            row.keys.map(k => k -> (acc.getOrElse(k, 0.0) + (if (row(k).isNaN) 0 else row(k)))).toMap
         }
 
     def avgMaps(): Map[String, Double] =
-        maps.sumMaps.map { case k -> v => k -> (v / maps.length)}
+        maps.sumMaps.map { case k -> v => k -> (v / maps.filter(row => !row(k).isNaN).length)}
 }
 
 object IncrementalMeasurementsTableUtils {
-    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesNonDeterministic", "characterNodes")
+    val measurementsCells = Seq("parseNodes", "parseNodesAmbiguous", "parseNodesIrreusable", "characterNodes")
 
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
@@ -404,13 +404,13 @@ object IncrementalMeasurementsTableUtils {
     )
 
     val measurementsCellsSummary = Seq(
-        "parseNodesNonDeterministic", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
+        "parseNodesIrreusable", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
         "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
     )
 
     val relativeTo = Map(
         "parseNodesAmbiguous" -> "parseNodes",
-        "parseNodesNonDeterministic" -> "parseNodes",
+        "parseNodesIrreusable" -> "parseNodes",
         "parseNodesReused" -> "parseNodesPrev",
         "parseNodesRebuilt" -> "parseNodesPrev",
         "breakDowns" -> "parseNodesPrev",
