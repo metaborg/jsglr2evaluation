@@ -18,7 +18,16 @@ val from = new Email("j.denkers@tudelft.nl")
 val subject = "JSGLR2 Evaluation Results"
 val to = new Email(email)
 val content = new Content("text/plain", " ")
-val mail = new Mail(from, subject, to, content)
+val mail = new Mail()
+
+val personalization = new Personalization()
+
+email.split(",").map(new Email(_)).foreach(personalization.addTo)
+
+mail.addPersonalization(personalization)
+mail.setFrom(from)
+mail.setSubject(subject)
+mail.addContent(content)
 
 val bytes = Files.readAllBytes(Paths.get((suite.dir / "archive.tar.gz").toString))
 val b64 = new sun.misc.BASE64Encoder().encode(bytes)
