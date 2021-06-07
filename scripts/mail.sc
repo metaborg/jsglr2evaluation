@@ -30,7 +30,7 @@ mail.setSubject(subject)
 mail.addContent(content)
 
 val bytes = Files.readAllBytes(Paths.get((suite.dir / "archive.tar.gz").toString))
-val b64 = new sun.misc.BASE64Encoder().encode(bytes)
+val b64 = java.util.Base64.getEncoder.encodeToString(bytes)
 
 val attachments = new Attachments();
 attachments.setContent(b64);
