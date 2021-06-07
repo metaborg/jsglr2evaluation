@@ -49,4 +49,4 @@ request.setBody(mail.build())
 
 val response = sendgrid.api(request)
 
-println("SendGrid status code: " + response.getStatusCode)
+println("SendGrid response: " + response.getStatusCode + " " + response.body + " " + response.getHeaders)
