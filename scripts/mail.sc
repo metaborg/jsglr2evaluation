@@ -47,4 +47,6 @@ request.setMethod(Method.POST)
 request.setEndpoint("mail/send")
 request.setBody(mail.build())
 
-sendgrid.api(request)
+val response = sendgrid.api(request)
+
+println("SendGrid status code: " + response.getStatusCode)
