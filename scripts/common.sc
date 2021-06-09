@@ -400,12 +400,12 @@ object IncrementalMeasurementsTableUtils {
 
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
-        "breakDowns", "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
+        "breakDowns", "breakDownHasChange", "breakDownIrreusable", "breakDownNoActions", "breakDownWrongState"
     )
 
     val measurementsCellsSummary = Seq(
         "parseNodesIrreusable", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
-        "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
+        "breakDownHasChange", "breakDownIrreusable", "breakDownNoActions", "breakDownWrongState"
     )
 
     val relativeTo = Map(
@@ -414,6 +414,7 @@ object IncrementalMeasurementsTableUtils {
         "parseNodesReused" -> "parseNodesPrev",
         "parseNodesRebuilt" -> "parseNodesPrev",
         "breakDowns" -> "parseNodesPrev",
+        "breakDownHasChange" -> "breakDowns",
         "breakDownIrreusable" -> "breakDowns",
         "breakDownNoActions" -> "breakDowns",
         "breakDownTemporary" -> "breakDowns",

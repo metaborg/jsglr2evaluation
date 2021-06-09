@@ -161,11 +161,11 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
         s"$label & ${measurementsCellsSummary.map(texWrapper(cellMapper(row, perc, true))).mkString(" & ")}"
     }
 
-    // The resizebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
+    // The scalebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSummary.size}}{|r}}
-        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\resizebox{0.4\\textwidth}{!}{Breakdowns (\\% of total breakdowns)}} \\\\
+        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\scalebox{0.98}{Breakdowns (\\% of total breakdowns)}} \\\\
         |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
-        |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
+        |       & \\multirowcell{2}{\\scalebox{0.98}{Contains}\\\\\\scalebox{0.98}{Change}} & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Wrong\\\\state} \\\\
         |  & & & & & & & & \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
@@ -221,7 +221,7 @@ def createMeasurementsTableSkew(
 
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSkew.size}}{|r}}
         |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes} &                \\multicolumn{2}{c|}{Shift}                & \\multicolumn{5}{c}{Breakdown} \\\\
-        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{Irre-\\\\usable} & \\makecell{No\\\\Actions} & \\makecell{Tempo-\\\\rary} & \\makecell{Wrong\\\\State} \\\\ \\hline
+        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{Contains\\\\Change} & \\makecell{Irre-\\\\usable} & \\makecell{No\\\\Actions} & \\makecell{Wrong\\\\State} \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
         |\\end{tabular}

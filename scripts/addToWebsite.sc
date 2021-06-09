@@ -284,9 +284,9 @@ val incrementalContent = if (inScope("incremental")) {
             |    <th>Parse Node</th>
             |    <th>Character Node</th>
             |    <th>Count</th>
+            |    <th>${withTooltip("Contains Change", "Parse nodes that were broken down because they contain a change from the diff")}</th>
             |    <th>${withTooltip("Irre&shy;usable", "Parse nodes that were broken down because they are irreusable, i.e., they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
             |    <th>${withTooltip("No Actions", "Parse nodes that were broken down because no actions were found in the parse table")}</th>
-            |    <th>${withTooltip("Tempo&shy;rary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
             |    <th>${withTooltip("Wrong State", "Parse nodes that were broken down because their saved parse state does not match the current state of the parser")}</th>
             |  </tr>
             |  ${indent(2, measurementsAvgRow)}
