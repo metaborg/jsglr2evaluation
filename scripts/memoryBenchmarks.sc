@@ -56,7 +56,7 @@ suite.languages.foreach { language =>
     }
 
     val numSamples = 100 // TODO this could be configurable
-    val sampledFilesBatch = scala.util.Random.shuffle(language.sourceFilesBatch() ++ language.sourceFilesIncremental).take(numSamples)
+    val sampledFilesBatch = scala.util.Random.shuffle(language.sourceFilesBatch() ++ language.sourceFilesIncremental).filter(_.size < 50000).take(numSamples)
     val sampledFilesIncremental = scala.util.Random.shuffle(incrementalSources).take(numSamples)
 
     Parser.jsglr2variants(language).foreach { parser =>
