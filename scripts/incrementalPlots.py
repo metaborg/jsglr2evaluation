@@ -228,7 +228,7 @@ def main():
                 csv_basename = ".".join(result_file.name.split(".")[:-1])
                 print(f"  {csv_basename}")
 
-                result_data = read_csv(result_file.path)
+                result_data = [row for row in read_csv(result_file.path) if row["Size (bytes)"] != "0"]
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
