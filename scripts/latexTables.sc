@@ -463,7 +463,7 @@ if (inScope("incremental")) {
             |    \\legend{Incremental parsing measurements for all languages.}
             |    \\label{tbl:incremental-measurements-all}
             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{0.5em}%
+            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{1em}%
             |        \\input{\\generated/figures/incremental/measurements-parsing-incremental-skew}%
             |    }
             |\\end{table}
@@ -477,7 +477,7 @@ if (inScope("incremental")) {
                     |    \\legend{Incremental parsing measurements for the ${language.name} language.}
                     |    \\label{tbl:incremental-measurements-${language.id}}
                     |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{0.5em}%
+                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{1em}%
                     |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental-skew}%
                     |    }
                     |\\end{table}
@@ -488,7 +488,7 @@ if (inScope("incremental")) {
                             |    \\legend{Incremental parsing measurements for ${language.name} source ${source.getName}.}
                             |    \\label{tbl:incremental-measurements-${language.id}-${source.id}}
                             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{0.5em}%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{1em}%
                             |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental-skew}%
                             |    }
                             |\\end{table}""".stripMargin
