@@ -44,6 +44,8 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     
     def measurementsDir(implicit suite: Suite) = suite.measurementsDir / id
 
+    def incrementalResultsDir(implicit suite: Suite) = Suite.incrementalResultsDir / id
+
     def measurementsBatch(source: Option[BatchSource], variant: String = "standard")(implicit suite: Suite) = {
         val measurementsCSV = (source match {
             case None         => measurementsDir / "batch"
@@ -83,6 +85,22 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
                     csvRows, csvRows.percs(relativeTo), skewRowsWithFirst, skewRowsWithFirst.percs(relativeTo),
                     avgs, avgPercs, skewAvgs, skewAvgPercs
                 )
+        }
+    }
+
+    def benchmarksIncremental(parseImplode: String, source: Option[IncrementalSource])(implicit suite: Suite): (
+        Seq[Map[String, Double]], Map[String, Double]
+    ) = {
+        source match {
+            case None =>
+                val rows = sources.incremental.map(source => benchmarksIncremental(parseImplode, Some(source))._2)
+                (rows, rows.avgMaps)
+            case Some(source) =>
+                val timeRows = CSV.parse(incrementalResultsDir / s"${source.id}-${parseImplode}.csv").rows.map { row =>
+                    row.values.map{ case k -> v => k -> (if (v == "") Double.NaN else v.toDouble) }
+                }.filter(_("Size (bytes)") > 0)
+                val avgs = timeRows.drop(1).avgMaps
+                (timeRows, avgs)
         }
     }
 
@@ -429,7 +447,7 @@ object IncrementalMeasurementsTableUtils {
             row(key).toString
     }
 
-    def getAllMeasurements(languages: TraversableOnce[Language])(implicit suite: Suite) =
+    def getAllIncrementalMeasurements(languages: TraversableOnce[Language])(implicit suite: Suite) =
         languages.map(_.measurementsIncremental(None)).map {
             case (_, _, _, _, row, perc, skewRow, skewPerc) => (row, perc, skewRow, skewPerc)
         }.unzip4

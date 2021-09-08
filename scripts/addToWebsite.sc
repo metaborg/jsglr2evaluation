@@ -202,7 +202,7 @@ val incrementalContent = if (inScope("incremental")) {
 
     def tdWrapper(mapper: (String) => String) = (key: String) => s"<td>${mapper(key).replace("\n", "<br />")}</td>"
 
-    def createMeasurementsTable(
+    def createIncrementalMeasurementsTable(
         header: String, ids: Seq[String],
         rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
         avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
@@ -239,7 +239,7 @@ val incrementalContent = if (inScope("incremental")) {
             |</table>""".stripMargin
     }
 
-    def createMeasurementsTableSkew(
+    def createIncrementalMeasurementsTableSkew(
         header: String, ids: Seq[String],
         rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
         avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
@@ -319,8 +319,8 @@ val incrementalContent = if (inScope("incremental")) {
             val skewAvgsLabel = s"Average (${ids(1)}..${ids.last})"
 
             val measurementsTables = incrementalMeasurementsTables(
-                createMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
-                createMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
+                createIncrementalMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
+                createIncrementalMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
 
             val plotFilenames = Seq(
                 "report", "report-except-first",
@@ -339,8 +339,8 @@ val incrementalContent = if (inScope("incremental")) {
         val ids = language.sources.incremental.map(_.getName)
 
         val measurementsTables = incrementalMeasurementsTables(
-            createMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs),
-            createMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
+            createIncrementalMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs),
+            createIncrementalMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
 
         (s"incremental-${language.id}", language.name,
             s"""|${measurementsTables}
@@ -348,11 +348,11 @@ val incrementalContent = if (inScope("incremental")) {
     }
 
     val languageNames = languagesWithIncrementalSources.map(_.name)
-    val (rows, percs, skewRows, skewPercs) = getAllMeasurements(languagesWithIncrementalSources)
+    val (rows, percs, skewRows, skewPercs) = getAllIncrementalMeasurements(languagesWithIncrementalSources)
 
     val measurementsTables = incrementalMeasurementsTables(
-        createMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
-        createMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
+        createIncrementalMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
+        createIncrementalMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
 
     s"""|${measurementsTables}
         |${withNav("<h2>Per Language</h2>", incrementalTabs)}""".stripMargin
