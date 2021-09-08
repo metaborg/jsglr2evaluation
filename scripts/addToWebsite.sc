@@ -370,7 +370,73 @@ val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBe
 }
 
 val memoryContent = if (memoryTabs.nonEmpty) {
-    withNav("<h2>Per Language</h2>", memoryTabs)
+    import java.text.DecimalFormat
+    val percFormat = new DecimalFormat("+0.00%;-0.00%")
+
+    val (memoryRowsInclGarbage, memoryRowsCacheOnly) = suite.languages.map(_.benchmarksMemory).unzip
+
+    val avgUsage = memoryRowsInclGarbage.avgMaps
+    val bestVariant = suite.jsglr2variants.minBy(variant => avgUsage(s"jsglr2-$variant"))
+    val compareVariants = Seq(
+        if (suite.variants.contains("standard")) Some(("standard", "Compared to the Standard variant")) else None,
+        if (bestVariant != "standard") Some((bestVariant, s"Compared to the best variant (${bestVariant.capitalize})")) else None,
+    ).flatten
+
+    def createRow(usage: Map[String, Double]) = suite.jsglr2variants.map(variant => {
+        val percs = compareVariants.map { case (compare, tooltip) =>
+            if (compare == variant) "&emsp;&mdash;&emsp;"
+            else withTooltip(percFormat.format(usage(s"jsglr2-$variant") / usage(s"jsglr2-$compare") - 1), tooltip)
+        }.mkString(" / ")
+        f"<td>${usage(s"jsglr2-$variant")}%1.0f ($percs)</td>"
+    }).mkString("\n")
+
+    val languageRowsIncl = (suite.languages zip memoryRowsInclGarbage).map { case (language, usage) =>
+        s"""|<tr>
+            |  <td>${language.name}</td>
+            |  ${indent(2, createRow(usage))}
+            |</tr>""".stripMargin
+    }.mkString("\n")
+
+    val cacheTable = if (suite.variants.contains("incremental")) {
+        val languageRowsCache = (suite.languages zip memoryRowsCacheOnly).map { case (language, usage) =>
+            f"""|<tr>
+                |  <td>${language.name}</td>
+                |  <td>${usage("jsglr2-incremental")}%1.0f</td>
+                |</tr>""".stripMargin
+        }.mkString("\n")
+
+        f"""|
+            |  <br />
+            |  <b>Bytes of memory used for the cache, per character in the input</b><br />
+            |  <table class="mx-auto" border="1" cellpadding="2">
+            |    <tr>
+            |      <th>Language</th>
+            |      <th>Incremental</th>
+            |    </tr>
+            |    <tr>
+            |      <td>Average</td>
+            |      <td>${memoryRowsCacheOnly.avgMaps()("jsglr2-incremental")}%1.0f</td>
+            |    </tr>
+            |    ${indent(4, languageRowsCache)}
+            |  </table>""".stripMargin
+    } else ""
+
+    s"""|<div class="text-center">
+        |  <b>Bytes of memory used during parsing in batch mode, per character in the input</b><br />
+        |  <table class="mx-auto" border="1" cellpadding="2">
+        |    <tr>
+        |      <th>Language</th>
+        |      ${indent(6, suite.jsglr2variants.map(variant => s"<th>${variant.capitalize}</th>").mkString("\n"))}
+        |    </tr>
+        |    <tr>
+        |      <td>Average</td>
+        |      ${indent(6, createRow(avgUsage))}
+        |    </tr>
+        |    ${indent(4, languageRowsIncl)}
+        |  </table>${cacheTable}
+        |</div>
+        |<br />
+        |${withNav("<h2>Per Language</h2>", memoryTabs)}""".stripMargin
 } else ""
 
 val tabs = Seq(
