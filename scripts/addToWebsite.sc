@@ -9,7 +9,7 @@ println("Adding to website...")
 def indent(spaces: Int, str: String) = str.replaceAll("\n", s"\n${" " * spaces}")
 
 def withTooltip(text: String, tooltip: String) =
-    s"""<a onclick"javascript:void" data-toggle="tooltip" data-placement="top" title="$tooltip">$text</a>"""
+    s"""<a data-toggle="tooltip" data-placement="top" title="$tooltip">$text</a>"""
 
 def withNav(title: String, tabs: Seq[(String, String, String)]) = {
     val active = tabs.filter(_._3 != "").headOption.map(_._1).getOrElse("")
