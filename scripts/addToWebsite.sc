@@ -183,7 +183,7 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
     (s"batch-${language.id}", language.name, batchLanguageContent(language))
 }
 
-def batchContent =
+def batchContent = if (inScope("batch")) {
     s"""|<div class="row">""" +
         (if (suite.implode.fold(true)(_ == false))
             s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>"""
@@ -196,6 +196,7 @@ def batchContent =
         else "") +
     s"""|</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
+} else ""
 
 val incrementalContent = if (inScope("incremental")) {
     import IncrementalMeasurementsTableUtils._
@@ -368,11 +369,15 @@ val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBe
             |</div>""".stripMargin)
 }
 
+val memoryContent = if (memoryTabs.nonEmpty) {
+    withNav("<h2>Per Language</h2>", memoryTabs)
+} else ""
+
 val tabs = Seq(
-    ("batch", "Batch", if (inScope("batch")) batchContent else ""),
+    ("batch", "Batch", batchContent),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (inScope("incremental")) incrementalContent else ""),
-    ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav("<h2>Per Language</h2>", memoryTabs) else ""),
+    ("incremental", "Incremental", incrementalContent),
+    ("memory", "Memory Benchmarks", memoryContent),
 )
 
 write.over(
