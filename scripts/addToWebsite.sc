@@ -307,7 +307,31 @@ val incrementalContent = if (inScope("incremental")) {
 
     val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
 
-    val incrementalTabs = languagesWithIncrementalSources.map { language =>
+    val plotFilenames = Seq(
+        "report", "report-except-first",
+        "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D"
+    )
+
+    val benchmarksTabs = languagesWithIncrementalSources.map { language =>
+        (s"incremental-benchmarks-${language.id}", language.name, withNav("<h3>Sources</h3>",
+            language.sources.incremental.map { source =>
+                (s"incremental-benchmarks-${language.id}-${source.id}", source.getName,
+                    plotFilenames.map { plot =>
+                        s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
+                    }.mkString("\n")
+                )
+            }
+        ))
+    }
+
+    val languageNames = languagesWithIncrementalSources.map(_.name)
+    val (rows, percs, skewRows, skewPercs) = getAllIncrementalMeasurements(languagesWithIncrementalSources)
+
+    val measurementsTables = incrementalMeasurementsTables(
+        createIncrementalMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
+        createIncrementalMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
+
+    val measurementsTabs = languagesWithIncrementalSources.map { language =>
         val sourcesTabs = language.sources.incremental.map { source =>
             val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
             val n = rows.length
@@ -323,15 +347,7 @@ val incrementalContent = if (inScope("incremental")) {
                 createIncrementalMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
                 createIncrementalMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
 
-            val plotFilenames = Seq(
-                "report", "report-except-first",
-                "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D"
-            )
-            val plots = plotFilenames.map { plot =>
-                s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
-            }.mkString("\n")
-
-            (s"incremental-${language.id}-${source.id}", source.getName, s"$measurementsTables\n$plots")
+            (s"incremental-measurements-${language.id}-${source.id}", source.getName, measurementsTables)
         }
 
         val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(None)
@@ -343,20 +359,19 @@ val incrementalContent = if (inScope("incremental")) {
             createIncrementalMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs),
             createIncrementalMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
 
-        (s"incremental-${language.id}", language.name,
+        (s"incremental-measurements-${language.id}", language.name,
             s"""|${measurementsTables}
                 |${withNav("<h3>Sources</h3>", sourcesTabs)}""".stripMargin)
     }
 
-    val languageNames = languagesWithIncrementalSources.map(_.name)
-    val (rows, percs, skewRows, skewPercs) = getAllIncrementalMeasurements(languagesWithIncrementalSources)
+    val measurementsContent =
+        s"""|${measurementsTables}
+            |${withNav("<h2>Per Language</h2>", measurementsTabs)}""".stripMargin
 
-    val measurementsTables = incrementalMeasurementsTables(
-        createIncrementalMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
-        createIncrementalMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
-
-    s"""|${measurementsTables}
-        |${withNav("<h2>Per Language</h2>", incrementalTabs)}""".stripMargin
+    withNav("", Seq(
+        (s"incremental-benchmarks", "Benchmarks", withNav("<h2>Per Language</h2>", benchmarksTabs)),
+        (s"incremental-measurements", "Measurements", measurementsContent),
+    ))
 } else ""
 
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
