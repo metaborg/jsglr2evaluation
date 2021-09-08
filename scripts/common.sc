@@ -252,6 +252,8 @@ case class Suite(configPath: Path, languages: Seq[Language], variants: Seq[Strin
     def resultsDir          = dir / "results"
     def websiteDir          = dir / "website"
 
+    def jsglr2variants = variants.filter(_ != "jsglr1")
+
     def scopes = Seq(
         if (languages.exists(_.sources.batch.nonEmpty)) Some("batch") else None,
         if (languages.exists(_.sources.incremental.nonEmpty)) Some("incremental") else None
