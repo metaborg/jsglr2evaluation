@@ -13,6 +13,7 @@ FIGURES_DIR = environ["JSGLR2EVALUATION_FIGURES_DIR"]
 COLORS = {
     "Standard": "rs",
     "Elkhound": "pm",
+    "Recovery": "o",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
     "TreeSitterIncremental": "g2",
@@ -22,6 +23,7 @@ COLORS = {
 LABELS = {
     "jsglr2-standard": "Standard",
     "jsglr2-elkhound": "Elkhound",
+    "jsglr2-recovery": "Recovery",
     "jsglr2-incremental": "IncrementalNoCache"
 }
 
