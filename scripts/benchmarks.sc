@@ -24,7 +24,7 @@ suite.languages.foreach { language =>
                 "-f", 1.toString,
                 "-rff", resultsPath.toString,
                 name,
-                "-jvmArgs=\"-DtestSet=" + testSetArgs.mkString(" ") + "\""
+                "-jvmArgs=\"-DtestSet=" + testSetArgs.mkString(" ") + "\" -Xmx8G"
             ) ++ params.toSeq.flatMap {
                 case (param, value) => Seq("-p", s"$param=$value")
             }
