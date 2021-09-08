@@ -333,6 +333,34 @@ def createIncrementalChangeSizeTable(rows: Seq[Map[String, Double]], avgs: Map[S
         |""".stripMargin
 }
 
+def createMemoryBenchmarksTable(header: String, ids: Seq[String], rows: Seq[Map[String, Double]]) = {
+    def cellMapper(row: Map[String, Double])(key: String) = {
+        if (row(key).isNaN) "--" else f"${row(key)}%1.0f"
+    }
+
+    val benchmarkCells = rows(0).keys.toList
+
+    val headers = Map(
+        "jsglr2-standard" -> "Standard",
+        "jsglr2-elkhound" -> "Elkhound",
+        "jsglr2-recovery" -> "Recovery",
+        "jsglr2-incremental" -> "Incremental",
+    )
+
+    val benchmarkAvgRow = s"Average & ${benchmarkCells.map(texWrapper(cellMapper(rows.avgMaps))).mkString(" & ")}"
+
+    val benchmarkRows = (ids zip rows).map { case (label, row) =>
+        s"$label & ${benchmarkCells.map(texWrapper(cellMapper(row))).mkString(" & ")}"
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${benchmarkCells.size}}{|r}}
+        |  $header & ${benchmarkCells.map(headers).mkString(" & ")} \\\\ \\hline
+        |  ${benchmarkAvgRow} \\\\ \\hline
+        |  ${benchmarkRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
 mkdir! suite.figuresDir
 
 write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
@@ -456,6 +484,13 @@ if (inScope("incremental")) {
             suite.figuresDir / "incremental" / s"benchmark-incremental-${parseImplode}.tex",
             createIncrementalBenchmarksTable("Language", languageNames, timeRows, avgs))
     }
+    val (memoryRowsInclGarbage, memoryRowsCacheOnly) = languagesWithIncrementalSources.map(_.benchmarksMemory).unzip
+    write.over(
+        suite.figuresDir / "incremental" / "benchmark-memory-incl-garbage.tex",
+        createMemoryBenchmarksTable("Language", languageNames, memoryRowsInclGarbage))
+    write.over(
+        suite.figuresDir / "incremental" / "benchmark-memory-cache-only.tex",
+        createMemoryBenchmarksTable("Language", languageNames, memoryRowsCacheOnly))
 
     val appendixMeasurements =
         s"""|\\begin{table}[ht]

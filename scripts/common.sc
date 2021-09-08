@@ -104,6 +104,21 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
         }
     }
 
+    def benchmarksMemory(implicit suite: Suite): (Map[String, Double], Map[String, Double]) = {
+        val memoryRows = CSV.parse(memoryBenchmarksDir / "batch.csv").rows.map(_.values)
+        val parsers = memoryRows.map(_("Parser")).distinct
+        val (keys1, keys2) = parsers.map { parser =>
+            val parserRows = memoryRows.filter(_("Parser") == parser)
+            val memoryPerByteIncls = parserRows.map(row => row("Memory (incl. garbage)").toDouble / row("Size").toDouble)
+            val memoryPerByteExcls = parserRows.map(row => row("Memory (excl. garbage)").toDouble / row("Size").toDouble)
+            (
+                parser -> (memoryPerByteIncls.sum / memoryPerByteIncls.length),
+                parser -> (memoryPerByteExcls.sum / memoryPerByteExcls.length)
+            )
+        }.unzip
+        (keys1.toMap, keys2.toMap)
+    }
+
     def measurementsParseTable(implicit suite: Suite) =
         CSV.parse(measurementsDir / "batch" / "parsetable.csv").rows.head
 
