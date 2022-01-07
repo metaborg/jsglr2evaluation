@@ -58,7 +58,10 @@ def latexTableTestSetsIncremental(implicit suite: Suite) = {
                 val files = (ls! versionDir)
                 (files.size.toLong, (files | read.lines | (_.size) sum).toLong, files | stat | (_.size) sum)
             }.filter(_._1 != 0).unzip3
-            val values = Iterator(files, lines, size, (size zip files) map { case (s, f) => if (f == 0) 0 else s / f })
+            val fileSize = (size zip files) map { case (s, f) => if (f == 0) 0 else s / f }
+            val changeSize = language.benchmarksIncremental("parse", Some(source))._1.drop(1)
+                .map(row => row("Removed").toLong + row("Added").toLong)
+            val values = Iterator(files, lines, size, fileSize, changeSize)
                 .map(v => thousandSeparator(mean(v).toString))
 
             s"  & ${source.getName} & ${files.size} & ${values.mkString(" & ")} \\\\"
@@ -68,8 +71,16 @@ def latexTableTestSetsIncremental(implicit suite: Suite) = {
             |${sources.mkString("\n")}""".stripMargin
     }
 
-    s"""|\\begin{tabular}{l|l|r|r|r|r|r}
-        |Language & Source & Versions & Files & Lines & Size (B) & Mean file size (B) \\\\ \\hline
+    s"""|\\begin{tabular}{l|l|r|r|r|r|r|r}
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Language}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Source}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Versions}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Files}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Lines}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Size (B)}} &
+        |\\multicolumn{1}{c|}{\\multirowcell{2}{Mean file \\\\ size (B)}} &
+        |\\multicolumn{1}{c}{\\multirowcell{2}{Change \\\\ size (B)}} \\\\
+        | & & & & & & & \\\\ \\hline
         |${languages.mkString(" \\hline\n")}
         |\\end{tabular}
         |""".stripMargin
@@ -149,10 +160,8 @@ val texWrapper = (mapper: (String) => String) => (key: String) => {
     "([0-9]{4,})".r.replaceSomeIn(res2, m => Some(thousandSeparator(m.group(1)).replace("\\", "\\\\")))
 }
 
-def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]]) = {
+def createIncrementalMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]]) = {
     import IncrementalMeasurementsTableUtils._
-
-    val n = rows.length
 
     val measurementsAvgRow =
         s"Average & ${measurementsCellsSummary.map(texWrapper(cellMapper(rows.avgMaps, percs.avgMaps, true))).mkString(" & ")}"
@@ -161,11 +170,11 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
         s"$label & ${measurementsCellsSummary.map(texWrapper(cellMapper(row, perc, true))).mkString(" & ")}"
     }
 
-    // The resizebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
+    // The scalebox is because the table is 1.05pt too wide otherwise. Hardly noticable, but I want to fix all warnings
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSummary.size}}{|r}}
-        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\resizebox{0.4\\textwidth}{!}{Breakdowns (\\% of total breakdowns)}} \\\\
+        |  \\multirowcell{3}{Language} & \\multicolumn{4}{c|}{Parse nodes (\\% of total nodes)} & \\multicolumn{4}{c}{\\scalebox{0.98}{Breakdowns (\\% of total breakdowns)}} \\\\
         |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{Reused} & \\multirowcell{2}{Broken\\\\down} & \\multirowcell{2}{Rebuilt}
-        |       & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Tempo-\\\\rary} & \\multirowcell{2}{Wrong\\\\state} \\\\
+        |       & \\multirowcell{2}{\\scalebox{0.98}{Contains}\\\\\\scalebox{0.98}{Change}} & \\multirowcell{2}{Irre-\\\\usable} & \\multirowcell{2}{No\\\\actions} & \\multirowcell{2}{Wrong\\\\state} \\\\
         |  & & & & & & & & \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
@@ -173,14 +182,12 @@ def createMeasurementsTableSummary(ids: Seq[String], rows: Seq[Map[String, Long]
         |""".stripMargin
 }
 
-def createMeasurementsTable(
+def createIncrementalMeasurementsTable(
     header: String, ids: Seq[String],
     rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
     avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
 ) = {
     import IncrementalMeasurementsTableUtils._
-
-    val n = rows.length
 
     val measurementsAvgRow = s"$avgsLabel & ${measurementsCells.map(texWrapper(cellMapper(avgs, avgPercs, header != "Version"))).mkString(" & ")}"
 
@@ -201,14 +208,12 @@ def createMeasurementsTable(
         |""".stripMargin
 }
 
-def createMeasurementsTableSkew(
+def createIncrementalMeasurementsTableSkew(
     header: String, ids: Seq[String],
     rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
     avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
 ) = {
     import IncrementalMeasurementsTableUtils._
-
-    val n = rows.length
 
     val measurementsAvgRow = s"$avgsLabel & ${measurementsCellsSkew.map(texWrapper(cellMapper(avgs, avgPercs, header != "Version"))).mkString(" & ")}"
 
@@ -221,7 +226,7 @@ def createMeasurementsTableSkew(
 
     s"""|\\begin{tabular}[t]{c *{${measurementsCellsSkew.size}}{|r}}
         |  \\multirowcell{3}{$header} & \\multicolumn{3}{c|}{Parse Nodes} &                \\multicolumn{2}{c|}{Shift}                & \\multicolumn{5}{c}{Breakdown} \\\\
-        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{Irre-\\\\usable} & \\makecell{No\\\\Actions} & \\makecell{Tempo-\\\\rary} & \\makecell{Wrong\\\\State} \\\\ \\hline
+        |                             &  Created  &  Reused  &  Rebuilt   & \\makecell{Parse\\\\Node} & \\makecell{Character\\\\Node} & Count & \\makecell{Contains\\\\Change} & \\makecell{Irre-\\\\usable} & \\makecell{No\\\\Actions} & \\makecell{Wrong\\\\State} \\\\ \\hline
         |  ${measurementsAvgRow} \\\\ \\hline
         |  ${measurementsRows.mkString(" \\\\\n  ")}
         |\\end{tabular}
@@ -268,6 +273,94 @@ def latexTableBenchmarks(benchmarksCSV: CSV, benchmarkType: BenchmarkType)(impli
     s.toString
 }
 
+def createIncrementalBenchmarksTable(header: String, ids: Seq[String], rows: Seq[Map[String, Double]], avgs: Map[String, Double]) = {
+    def cellMapper(row: Map[String, Double])(key: String) = {
+        if (row(key).isNaN) "--" else f"${row(key)}%3.3f"
+    }
+
+    val benchmarkCells = Seq("Standard", "Elkhound", "Recovery", "IncrementalNoCache", "Incremental", "TreeSitterIncrementalNoCache", "TreeSitterIncremental")
+                            .filter(key => !avgs.getOrElse(key, Double.NaN).isNaN)
+
+    val headers = Map(
+        "Standard" -> "Standard",
+        "Elkhound" -> "Elkhound",
+        "Recovery" -> "Recovery",
+        "IncrementalNoCache" -> "Incremental",
+        "Incremental" -> "Incremental",
+        "TreeSitterIncrementalNoCache" -> "Tree-sitter",
+        "TreeSitterIncremental" -> "Tree-sitter"
+    )
+
+    val noAvgsNaN = avgs.map { case k -> v => k -> (if (header != "Version" && rows.exists(_(k).isNaN)) Double.NaN else v) }
+
+    val benchmarkAvgRow = s"Average & ${benchmarkCells.map(texWrapper(cellMapper(noAvgsNaN))).mkString(" & ")}"
+
+    val benchmarkRows = (ids zip rows).map { case (label, row) =>
+        s"$label & ${benchmarkCells.map(texWrapper(cellMapper(row))).mkString(" & ")}"
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${benchmarkCells.size}}{|r}}
+        |  $header & ${benchmarkCells.map(headers).mkString(" & ")} \\\\
+        |          & ${benchmarkCells.map(key => if (key.contains("NoCache")) "(no cache)" else "").mkString(" & ")} \\\\ \\hline
+        |  ${benchmarkAvgRow} \\\\ \\hline
+        |  ${benchmarkRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
+def createIncrementalChangeSizeTable(rows: Seq[Map[String, Double]], avgs: Map[String, Double]) = {
+    def cellMapper(row: Map[String, Double])(key: String) = {
+        if (row(key).isNaN) "--" else f"${Math.round(row(key))}"
+    }
+
+    val benchmarkCells = Seq("Size (bytes)", "Removed", "Added")
+
+    val benchmarkAvgRow = benchmarkCells.map(texWrapper(cellMapper(avgs))).mkString(" & ")
+
+    val benchmarkRows = rows.map { row =>
+        if (row("Size (bytes)") == row("Added") && row("Removed") == 0)
+            benchmarkCells.map(texWrapper(cellMapper(row + ("Added" -> Double.NaN) + ("Removed" -> Double.NaN)))).mkString(" & ")
+        else
+            benchmarkCells.map(texWrapper(cellMapper(row))).mkString(" & ")
+    }
+
+    s"""|\\begin{tabular}[t]{r|r|r}
+        |  Size & Removed & Added \\\\
+        |   (B) &     (B) &   (B) \\\\ \\hline
+        |  ${benchmarkAvgRow} \\\\ \\hline
+        |  ${benchmarkRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
+def createMemoryBenchmarksTable(header: String, ids: Seq[String], rows: Seq[Map[String, Double]]) = {
+    def cellMapper(row: Map[String, Double])(key: String) = {
+        if (row(key).isNaN) "--" else f"${row(key)}%1.0f"
+    }
+
+    val benchmarkCells = rows(0).keys.toList
+
+    val headers = Map(
+        "jsglr2-standard" -> "Standard",
+        "jsglr2-elkhound" -> "Elkhound",
+        "jsglr2-recovery" -> "Recovery",
+        "jsglr2-incremental" -> "Incremental",
+    )
+
+    val benchmarkAvgRow = s"Average & ${benchmarkCells.map(texWrapper(cellMapper(rows.avgMaps))).mkString(" & ")}"
+
+    val benchmarkRows = (ids zip rows).map { case (label, row) =>
+        s"$label & ${benchmarkCells.map(texWrapper(cellMapper(row))).mkString(" & ")}"
+    }
+
+    s"""|\\begin{tabular}[t]{c *{${benchmarkCells.size}}{|r}}
+        |  $header & ${benchmarkCells.map(headers).mkString(" & ")} \\\\ \\hline
+        |  ${benchmarkAvgRow} \\\\ \\hline
+        |  ${benchmarkRows.mkString(" \\\\\n  ")}
+        |\\end{tabular}
+        |""".stripMargin
+}
+
 mkdir! suite.figuresDir
 
 write.over(suite.figuresDir / "testsets.tex", latexTableTestSets)
@@ -300,6 +393,7 @@ if (inScope("incremental")) {
         mkdir! suite.figuresDir / "incremental" / language.id
         language.sources.incremental.foreach { source =>
             mkdir! suite.figuresDir / "incremental" / language.id / s"${source.id}-parse"
+            mkdir! suite.figuresDir / "incremental" / language.id / s"${source.id}-parse+implode"
 
             val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
             val n = rows.length
@@ -314,10 +408,24 @@ if (inScope("incremental")) {
 
             write.over(
                 suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental.tex",
-                createMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs))
+                createIncrementalMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs))
             write.over(
                 suite.figuresDir / "incremental" / language.id / s"${source.id}-parse" / "measurements-parsing-incremental-skew.tex",
-                createMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
+                createIncrementalMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
+
+            Seq("parse", "parse+implode").foreach { parseImplode =>
+                val (timeRows, avgs) = language.benchmarksIncremental(parseImplode, Some(source))
+                val ids = timeRows.map(_("i").toLong.toString)
+
+                if (parseImplode == "parse")
+                    write.over(
+                        suite.figuresDir / "incremental" / language.id / s"${source.id}-${parseImplode}" / "benchmark-change-size.tex",
+                        createIncrementalChangeSizeTable(timeRows, avgs))
+
+                write.over(
+                    suite.figuresDir / "incremental" / language.id / s"${source.id}-${parseImplode}" / "benchmark-incremental.tex",
+                    createIncrementalBenchmarksTable("Version", ids, timeRows, avgs))
+            }
         }
 
         val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(None)
@@ -327,48 +435,84 @@ if (inScope("incremental")) {
 
         write.over(
             suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental.tex",
-            createMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs))
+            createIncrementalMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs))
         write.over(
             suite.figuresDir / "incremental" / language.id / "measurements-parsing-incremental-skew.tex",
-            createMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
+            createIncrementalMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
+
+        Seq("parse", "parse+implode").foreach { parseImplode =>
+            val (timeRows, avgs) = language.benchmarksIncremental(parseImplode, None)
+
+            if (parseImplode == "parse")
+                write.over(
+                    suite.figuresDir / "incremental" / language.id / "benchmark-incremental-change-size.tex",
+                    createIncrementalChangeSizeTable(timeRows, avgs))
+
+            write.over(
+                suite.figuresDir / "incremental" / language.id / s"benchmark-incremental-${parseImplode}.tex",
+                createIncrementalBenchmarksTable("Source", ids, timeRows, avgs))
+        }
     }
 
     val languageNames = languagesWithIncrementalSources.map(_.name)
-    val (rows, percs, skewRows, skewPercs) = getAllMeasurements(languagesWithIncrementalSources)
+    val (rows, percs, skewRows, skewPercs) = getAllIncrementalMeasurements(languagesWithIncrementalSources)
 
     write.over(
         suite.figuresDir / "incremental" / "measurements-parsing-incremental.tex",
-        createMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps))
+        createIncrementalMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps))
     write.over(
         suite.figuresDir / "incremental" / "measurements-parsing-incremental-skew.tex",
-        createMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
+        createIncrementalMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
     write.over(
         suite.figuresDir / "incremental" / "measurements-parsing-incremental-summary.tex",
-        createMeasurementsTableSummary(languageNames,
+        createIncrementalMeasurementsTableSummary(languageNames,
             rows.zip(skewRows).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesIrreusable")),
             percs.zip(skewPercs).map(t => t._2 ++ t._1.filterKeys(_ == "parseNodesIrreusable"))))
 
-    val appendix =
+    val timeData = Seq("parse", "parse+implode").map { parseImplode =>
+        val timeRows = languagesWithIncrementalSources.map(_.benchmarksIncremental(parseImplode, None)).map(_._2)
+        val avgs = timeRows.avgMaps
+        (parseImplode, timeRows, avgs)
+    }
+    timeData.foreach { case (parseImplode, timeRows, avgs) =>
+        if (parseImplode == "parse")
+            write.over(
+                suite.figuresDir / "incremental" / "benchmark-incremental-change-size.tex",
+                createIncrementalChangeSizeTable(timeRows, avgs))
+
+        write.over(
+            suite.figuresDir / "incremental" / s"benchmark-incremental-${parseImplode}.tex",
+            createIncrementalBenchmarksTable("Language", languageNames, timeRows, avgs))
+    }
+    val (memoryRowsInclGarbage, memoryRowsCacheOnly) = languagesWithIncrementalSources.map(_.benchmarksMemory).unzip
+    write.over(
+        suite.figuresDir / "incremental" / "benchmark-memory-incl-garbage.tex",
+        createMemoryBenchmarksTable("Language", languageNames, memoryRowsInclGarbage))
+    write.over(
+        suite.figuresDir / "incremental" / "benchmark-memory-cache-only.tex",
+        createMemoryBenchmarksTable("Language", languageNames, memoryRowsCacheOnly))
+
+    val appendixMeasurements =
         s"""|\\begin{table}[ht]
             |    \\centering
             |    \\legend{Incremental parsing measurements for all languages.}
             |    \\label{tbl:incremental-measurements-all}
             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{0.5em}%
+            |        \\input{\\generated/figures/incremental/measurements-parsing-incremental}\\hspace{1em}%
             |        \\input{\\generated/figures/incremental/measurements-parsing-incremental-skew}%
             |    }
             |\\end{table}
             |
             |
             |${languagesWithIncrementalSources.map { language =>
-                s"""|\\section{${language.name}}
+                s"""|\\subsection{${language.name}}
                     |
                     |\\begin{table}[ht]
                     |    \\centering
                     |    \\legend{Incremental parsing measurements for the ${language.name} language.}
                     |    \\label{tbl:incremental-measurements-${language.id}}
                     |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{0.5em}%
+                    |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental}\\hspace{1em}%
                     |        \\input{\\generated/figures/incremental/${language.id}/measurements-parsing-incremental-skew}%
                     |    }
                     |\\end{table}
@@ -379,12 +523,55 @@ if (inScope("incremental")) {
                             |    \\legend{Incremental parsing measurements for ${language.name} source ${source.getName}.}
                             |    \\label{tbl:incremental-measurements-${language.id}-${source.id}}
                             |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
-                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{0.5em}%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental}\\hspace{1em}%
                             |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/measurements-parsing-incremental-skew}%
                             |    }
                             |\\end{table}""".stripMargin
                      }.mkString("\n\n")}""".stripMargin
              }.mkString("\n\n\n\\clearpage\n\n")}
             |""".stripMargin
-    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-appendix.tex", appendix)
+    write.over(suite.figuresDir / "incremental" / "measurements-parsing-incremental-appendix.tex", appendixMeasurements)
+
+    val appendixBenchmarks =
+        s"""|\\begin{table}[H]
+            |    \\centering
+            |    \\legend{Average parse time for all languages, excluding version 0.}
+            |    \\label{tbl:incremental-benchmarks-all}
+            |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
+            |        \\input{\\generated/figures/incremental/benchmark-incremental-parse}\\hspace{1em}%
+            |        \\input{\\generated/figures/incremental/benchmark-incremental-change-size}\\hspace{1em}%
+            |        \\input{\\generated/figures/incremental/benchmark-incremental-parse+implode}%
+            |    }
+            |\\end{table}
+            |
+            |
+            |${languagesWithIncrementalSources.map { language =>
+                s"""|\\subsection{${language.name}}
+                    |
+                    |\\begin{table}[H]
+                    |    \\centering
+                    |    \\legend{Average parse times for the ${language.name} language, excluding version 0.}
+                    |    \\label{tbl:incremental-benchmarks-${language.id}}
+                    |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
+                    |        \\input{\\generated/figures/incremental/${language.id}/benchmark-incremental-parse}\\hspace{1em}%
+                    |        \\input{\\generated/figures/incremental/${language.id}/benchmark-incremental-change-size}\\hspace{1em}%
+                    |        \\input{\\generated/figures/incremental/${language.id}/benchmark-incremental-parse+implode}%
+                    |    }
+                    |\\end{table}
+                    |
+                    |${language.sources.incremental.map { source =>
+                        s"""|\\begin{table}[H]
+                            |    \\centering
+                            |    \\legend{Parse times for ${language.name} source ${source.getName}.}
+                            |    \\label{tbl:incremental-benchmarks-${language.id}-${source.id}}
+                            |    \\maxsizebox*{\\linewidth}{\\textheight-2.2em}{%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/benchmark-incremental}\\hspace{1em}%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse/benchmark-change-size}\\hspace{1em}%
+                            |        \\input{\\generated/figures/incremental/${language.id}/${source.id}-parse+implode/benchmark-incremental}%
+                            |    }
+                            |\\end{table}""".stripMargin
+                     }.mkString("\n\n")}""".stripMargin
+             }.mkString("\n\n\n")}
+            |""".stripMargin
+    write.over(suite.figuresDir / "incremental" / "benchmark-parsing-incremental-appendix.tex", appendixBenchmarks)
 }

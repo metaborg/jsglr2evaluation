@@ -53,7 +53,7 @@ languages:
           repo: https://github.com/apache/commons-lang.git
 ```
 
-This will run the evaluation suite for the Java language and takes the apacha-commons-lang project as corpus.
+This will run the evaluation suite for the Java language and takes the Apache's commons-lang project as corpus.
 
 You can add new languages to the evaluation by adding an entry under the `languages` list.
 In above example, `parseTable.repo` specifies a Git repository of a Spoofax language of which the parse table will be used.

@@ -9,7 +9,7 @@ println("Adding to website...")
 def indent(spaces: Int, str: String) = str.replaceAll("\n", s"\n${" " * spaces}")
 
 def withTooltip(text: String, tooltip: String) =
-    s"""<a onclick"javascript:void" data-toggle="tooltip" data-placement="top" title="$tooltip">$text</a>"""
+    s"""<a data-toggle="tooltip" data-placement="top" title="$tooltip">$text</a>"""
 
 def withNav(title: String, tabs: Seq[(String, String, String)]) = {
     val active = tabs.filter(_._3 != "").headOption.map(_._1).getOrElse("")
@@ -183,7 +183,7 @@ def batchTabs = suite.languages.filter(_.sourcesBatchNonEmpty.nonEmpty).map { la
     (s"batch-${language.id}", language.name, batchLanguageContent(language))
 }
 
-def batchContent =
+def batchContent = if (inScope("batch")) {
     s"""|<div class="row">""" +
         (if (suite.implode.fold(true)(_ == false))
             s"""|  <div class="col-sm"><img src="./figures/batch/internal-parse/throughput.png" /></div>"""
@@ -196,13 +196,14 @@ def batchContent =
         else "") +
     s"""|</div>
         |${withNav("<h2>Per Language</h2>", batchTabs)}""".stripMargin
+} else ""
 
 val incrementalContent = if (inScope("incremental")) {
     import IncrementalMeasurementsTableUtils._
 
-    def tdWrapper(mapper: (String) => String) = (key: String) => s"<td>${mapper(key).replace("\n", "<br />")}</td>"
+    def tdWrapper(mapper: (String) => String) = (key: String) => s"""<td style="text-align: right;">${mapper(key).replace("\n", "<br />")}</td>"""
 
-    def createMeasurementsTable(
+    def createIncrementalMeasurementsTable(
         header: String, ids: Seq[String],
         rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
         avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
@@ -239,7 +240,7 @@ val incrementalContent = if (inScope("incremental")) {
             |</table>""".stripMargin
     }
 
-    def createMeasurementsTableSkew(
+    def createIncrementalMeasurementsTableSkew(
         header: String, ids: Seq[String],
         rows: Seq[Map[String, Long]], percs: Seq[Map[String, Double]],
         avgsLabel: String, avgs: Map[String, Long], avgPercs: Map[String, Double]
@@ -284,9 +285,9 @@ val incrementalContent = if (inScope("incremental")) {
             |    <th>Parse Node</th>
             |    <th>Character Node</th>
             |    <th>Count</th>
+            |    <th>${withTooltip("Contains Change", "Parse nodes that were broken down because they contain a change from the diff")}</th>
             |    <th>${withTooltip("Irre&shy;usable", "Parse nodes that were broken down because they are irreusable, i.e., they were created when the parser was parsing non-deterministically (i.e., had multiple active parse stacks)")}</th>
             |    <th>${withTooltip("No Actions", "Parse nodes that were broken down because no actions were found in the parse table")}</th>
-            |    <th>${withTooltip("Tempo&shy;rary", "Parse nodes that were broken down because they were created as temporary nodes while applying the text diff to the previous parse forest")}</th>
             |    <th>${withTooltip("Wrong State", "Parse nodes that were broken down because their saved parse state does not match the current state of the parser")}</th>
             |  </tr>
             |  ${indent(2, measurementsAvgRow)}
@@ -304,9 +305,148 @@ val incrementalContent = if (inScope("incremental")) {
             |  </div>
             |</div>""".stripMargin
 
-    val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
+    def createIncrementalBenchmarksTable(header: String, ids: Seq[String], rows: Seq[Map[String, Double]], avgs: Map[String, Double]) = {
+        def cellMapper(row: Map[String, Double])(key: String) = {
+            if (row(key).isNaN) "&mdash;" else f"${row(key)}%3.3f"
+        }
 
-    val incrementalTabs = languagesWithIncrementalSources.map { language =>
+        val benchmarkCells = Seq("Standard", "Elkhound", "Recovery", "IncrementalNoCache", "Incremental", "TreeSitterIncrementalNoCache", "TreeSitterIncremental")
+                                .filter(key => !avgs.getOrElse(key, Double.NaN).isNaN)
+
+        val headers = Map(
+            "Standard" -> "Standard",
+            "Elkhound" -> "Elkhound",
+            "Recovery" -> "Recovery",
+            "IncrementalNoCache" -> "Incremental",
+            "Incremental" -> "Incremental",
+            "TreeSitterIncrementalNoCache" -> "Tree-sitter",
+            "TreeSitterIncremental" -> "Tree-sitter"
+        )
+
+        val noAvgsNaN = avgs.map { case k -> v => k -> (if (header != "Version" && rows.exists(_(k).isNaN)) Double.NaN else v) }
+
+        val benchmarkAvgRow =
+            s"""|<tr>
+                |  <td>Average</td>
+                |  ${indent(2, benchmarkCells.map(tdWrapper(cellMapper(noAvgsNaN))).mkString("\n"))}
+                |</tr>""".stripMargin
+
+        val benchmarkRows = (ids zip rows).map { case (label, row) =>
+            s"""|<tr>
+                |  <td>$label</td>
+                |  ${indent(2, benchmarkCells.map(tdWrapper(cellMapper(row))).mkString("\n"))}
+                |</tr>""".stripMargin
+        }
+
+        s"""|<table style="text-align: center;" border="1" cellpadding="2">
+            |  <tr>
+            |    <th>$header</th>
+            |    ${indent(4, benchmarkCells
+                    .map(key => headers(key) + (if (key.contains("NoCache")) "<br />(no cache)" else ""))
+                    .map(header => s"<th>$header</th>")
+                    .mkString("\n"))}
+            |  </tr>
+            |  ${indent(2, benchmarkAvgRow)}
+            |  ${indent(2, benchmarkRows.mkString("\n"))}
+            |</table>""".stripMargin
+    }
+
+    import java.text.DecimalFormat
+    val percFormat = new DecimalFormat("+0.00%;-0.00%")
+
+    val languagesWithIncrementalSources = suite.languages.filter(_.sources.incremental.nonEmpty)
+    val languageNames = languagesWithIncrementalSources.map(_.name)
+
+    val plotFilenames = Seq(
+        "report", "report-except-first",
+        "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D"
+    )
+
+    val timeData = Seq("parse", "parse+implode").map { parseImplode =>
+        val timeRows = languagesWithIncrementalSources.map(_.benchmarksIncremental(parseImplode, None)).map(_._2)
+        val avgs = timeRows.avgMaps
+        (parseImplode, timeRows, avgs)
+    }
+    val timeSummaryTables = timeData.map { case (parseImplode, timeRows, avgs) => (
+        createIncrementalBenchmarksTable("Language", languageNames, timeRows, avgs),
+
+        f"""|<table style="text-align: center;" border="1" cellpadding="2">
+            |  <tr>
+            |    <th></th>
+            |    <th>Standard</th>
+            |    <th>Elkhound</th>
+            |    <th>Incremental<br />(no cache)</th>
+            |  </tr>
+            |  <tr>
+            |    <td>Slowdown of Incremental (no cache) w.r.t.:</td>
+            |    <td>${percFormat.format(avgs("IncrementalNoCache") / avgs("Standard") - 1)}</td>
+            |    <td>${percFormat.format(avgs("IncrementalNoCache") / avgs("Elkhound") - 1)}</td>
+            |    <td>&mdash;</td>
+            |  </tr>
+            |  <tr>
+            |    <td>Speedup of Incremental w.r.t.:</td>
+            |    <td>${avgs("Standard") / avgs("Incremental")}%2.2f&times;</td>
+            |    <td>${avgs("Elkhound") / avgs("Incremental")}%2.2f&times;</td>
+            |    <td>${avgs("IncrementalNoCache") / avgs("Incremental")}%2.2f&times;</td>
+            |  </tr>
+            |</table>""".stripMargin,
+
+        (if (parseImplode == "parse+implode")
+        f"""|Speedup of Tree-sitter (incremental w.r.t. no cache): ${timeRows(0)("TreeSitterIncrementalNoCache") / timeRows(0)("TreeSitterIncremental")}%2.2f&times;
+            |Speedup of Tree-sitter w.r.t. Incremental (no cache): ${timeRows(0)("IncrementalNoCache") / timeRows(0)("TreeSitterIncrementalNoCache")}%2.2f&times;
+            |Speedup of Tree-sitter w.r.t. Incremental (incremental): ${timeRows(0)("Incremental") / timeRows(0)("TreeSitterIncremental")}%2.2f&times;
+            |""".stripMargin.replaceAll("\n", "<br />\n").trim
+        else "")
+    )}
+    val jsglr2parserVariants = timeData(0)._3.keys
+        .filter(key => !Set("i", "Added", "Removed", "Changes", "Size (bytes)").contains(key) && !key.contains("Error") && !timeData(0)._3(key).isNaN)
+    val timeSummary =
+        s"""|<h2>Excluding imploding and tokenization</h2>
+            |<h3>Average parse times for the entire evaluation corpus, per language, in milliseconds</h3>
+            |${timeSummaryTables(0)._1}
+            |<h3>Slowdown/speedup comparison</h3>
+            |${timeSummaryTables(0)._2}
+            |<br />
+            |<h2>Including imploding and tokenization</h2>
+            |<h3>Average parse times for the entire evaluation corpus, per language, in milliseconds</h3>
+            |${timeSummaryTables(1)._1}
+            |<h3>Slowdown/speedup comparison</h3>
+            |${timeSummaryTables(1)._2}
+            |<h3>Comparison with Tree-sitter</h3>
+            |${timeSummaryTables(1)._3}
+            |<br />
+            |<h2>Fraction of parse time as part of the full JSGLR2 parsing pipeline</h2>
+            |<table style="text-align: center;" border="1" cellpadding="2">
+            |  <tr>
+            |    ${indent(4, jsglr2parserVariants.map(parser => s"<th>${if (parser == "IncrementalNoCache") "Incremental<br />(no cache)" else parser}</th>").mkString("\n"))}
+            |  </tr>
+            |  <tr>
+            |    ${indent(4, jsglr2parserVariants.map(parser => f"<td>${timeData(0)._3(parser) / timeData(1)._3(parser) * 100}%2.2f%%</td>").mkString("\n"))}
+            |  </tr>
+            |</table>
+            |<br />""".stripMargin
+
+    val benchmarksTabs =
+        ("incremental-benchmarks-summary", "Summary", timeSummary) +:
+        languagesWithIncrementalSources.map { language =>
+            (s"incremental-benchmarks-${language.id}", language.name, withNav("<h3>Sources</h3>",
+                language.sources.incremental.map { source =>
+                    (s"incremental-benchmarks-${language.id}-${source.id}", source.getName,
+                        plotFilenames.map { plot =>
+                            s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
+                        }.mkString("\n")
+                    )
+                }
+            ))
+        }
+
+    val (rows, percs, skewRows, skewPercs) = getAllIncrementalMeasurements(languagesWithIncrementalSources)
+
+    val measurementsTables = incrementalMeasurementsTables(
+        createIncrementalMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
+        createIncrementalMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
+
+    val measurementsTabs = languagesWithIncrementalSources.map { language =>
         val sourcesTabs = language.sources.incremental.map { source =>
             val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(Some(source))
             val n = rows.length
@@ -319,18 +459,10 @@ val incrementalContent = if (inScope("incremental")) {
             val skewAvgsLabel = s"Average (${ids(1)}..${ids.last})"
 
             val measurementsTables = incrementalMeasurementsTables(
-                createMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
-                createMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
+                createIncrementalMeasurementsTable("Version", ids, rows, percs, avgsLabel, avgs, avgPercs),
+                createIncrementalMeasurementsTableSkew("Version", skewIds, skewRows, skewPercs, skewAvgsLabel, skewAvgs, skewAvgPercs))
 
-            val plotFilenames = Seq(
-                "report", "report-except-first",
-                "report-time-vs-bytes", "report-time-vs-changes", "report-time-vs-changes-3D"
-            )
-            val plots = plotFilenames.map { plot =>
-                s"""<p><img src="./figures/incremental/${language.id}/${source.id}-parse+implode/$plot.svg" /></p>"""
-            }.mkString("\n")
-
-            (s"incremental-${language.id}-${source.id}", source.getName, s"$measurementsTables\n$plots")
+            (s"incremental-measurements-${language.id}-${source.id}", source.getName, measurementsTables)
         }
 
         val (rows, percs, skewRows, skewPercs, avgs, avgPercs, skewAvgs, skewAvgPercs) = language.measurementsIncremental(None)
@@ -339,23 +471,22 @@ val incrementalContent = if (inScope("incremental")) {
         val ids = language.sources.incremental.map(_.getName)
 
         val measurementsTables = incrementalMeasurementsTables(
-            createMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs),
-            createMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
+            createIncrementalMeasurementsTable("Source", ids, rows, percs, "Average", avgs, avgPercs),
+            createIncrementalMeasurementsTableSkew("Source", ids, skewRows, skewPercs, "Average", skewAvgs, skewAvgPercs))
 
-        (s"incremental-${language.id}", language.name,
+        (s"incremental-measurements-${language.id}", language.name,
             s"""|${measurementsTables}
                 |${withNav("<h3>Sources</h3>", sourcesTabs)}""".stripMargin)
     }
 
-    val languageNames = languagesWithIncrementalSources.map(_.name)
-    val (rows, percs, skewRows, skewPercs) = getAllMeasurements(languagesWithIncrementalSources)
+    val measurementsContent =
+        s"""|${measurementsTables}
+            |${withNav("<h2>Per Language</h2>", measurementsTabs)}""".stripMargin
 
-    val measurementsTables = incrementalMeasurementsTables(
-        createMeasurementsTable("Language", languageNames, rows, percs, "Average", rows.avgMaps, percs.avgMaps),
-        createMeasurementsTableSkew("Language", languageNames, skewRows, skewPercs, "Average", skewRows.avgMaps, skewPercs.avgMaps))
-
-    s"""|${measurementsTables}
-        |${withNav("<h2>Per Language</h2>", incrementalTabs)}""".stripMargin
+    withNav("", Seq(
+        (s"incremental-benchmarks", "Benchmarks", withNav("<h2>Per Language</h2>", benchmarksTabs)),
+        (s"incremental-measurements", "Measurements", measurementsContent),
+    ))
 } else ""
 
 val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBenchmarks" / l.id).map { language =>
@@ -368,11 +499,81 @@ val memoryTabs = suite.languages.filter(l => exists! dir / "figures" / "memoryBe
             |</div>""".stripMargin)
 }
 
+val memoryContent = if (memoryTabs.nonEmpty) {
+    import java.text.DecimalFormat
+    val percFormat = new DecimalFormat("+0.00%;-0.00%")
+
+    val (memoryRowsInclGarbage, memoryRowsCacheOnly) = suite.languages.map(_.benchmarksMemory).unzip
+
+    val avgUsage = memoryRowsInclGarbage.avgMaps
+    val bestVariant = suite.jsglr2variants.minBy(variant => avgUsage(s"jsglr2-$variant"))
+    val compareVariants = Seq(
+        if (suite.variants.contains("standard")) Some(("standard", "Compared to the Standard variant")) else None,
+        if (bestVariant != "standard") Some((bestVariant, s"Compared to the best variant (${bestVariant.capitalize})")) else None,
+    ).flatten
+
+    def createRow(usage: Map[String, Double]) = suite.jsglr2variants.map(variant => {
+        val percs = compareVariants.map { case (compare, tooltip) =>
+            if (compare == variant) "&emsp;&mdash;&emsp;"
+            else withTooltip(percFormat.format(usage(s"jsglr2-$variant") / usage(s"jsglr2-$compare") - 1), tooltip)
+        }.mkString(" / ")
+        f"<td>${usage(s"jsglr2-$variant")}%1.0f ($percs)</td>"
+    }).mkString("\n")
+
+    val languageRowsIncl = (suite.languages zip memoryRowsInclGarbage).map { case (language, usage) =>
+        s"""|<tr>
+            |  <td>${language.name}</td>
+            |  ${indent(2, createRow(usage))}
+            |</tr>""".stripMargin
+    }.mkString("\n")
+
+    val cacheTable = if (suite.variants.contains("incremental")) {
+        val languageRowsCache = (suite.languages zip memoryRowsCacheOnly).map { case (language, usage) =>
+            f"""|<tr>
+                |  <td>${language.name}</td>
+                |  <td>${usage("jsglr2-incremental")}%1.0f</td>
+                |</tr>""".stripMargin
+        }.mkString("\n")
+
+        f"""|
+            |  <br />
+            |  <b>Bytes of memory used for the cache, per character in the input</b><br />
+            |  <table class="mx-auto" border="1" cellpadding="2">
+            |    <tr>
+            |      <th>Language</th>
+            |      <th>Incremental</th>
+            |    </tr>
+            |    <tr>
+            |      <td>Average</td>
+            |      <td>${memoryRowsCacheOnly.avgMaps()("jsglr2-incremental")}%1.0f</td>
+            |    </tr>
+            |    ${indent(4, languageRowsCache)}
+            |  </table>""".stripMargin
+    } else ""
+
+    s"""|<div class="text-center">
+        |  <b>Bytes of memory used during parsing in batch mode, per character in the input</b><br />
+        |  <table class="mx-auto" border="1" cellpadding="2">
+        |    <tr>
+        |      <th>Language</th>
+        |      ${indent(6, suite.jsglr2variants.map(variant => s"<th>${variant.capitalize}</th>").mkString("\n"))}
+        |    </tr>
+        |    <tr>
+        |      <td>Average</td>
+        |      ${indent(6, createRow(avgUsage))}
+        |    </tr>
+        |    ${indent(4, languageRowsIncl)}
+        |  </table>${cacheTable}
+        |</div>
+        |<br />
+        |${withNav("<h2>Per Language</h2>", memoryTabs)}""".stripMargin
+} else ""
+
 val tabs = Seq(
-    ("batch", "Batch", if (inScope("batch")) batchContent else ""),
+    ("batch", "Batch", batchContent),
     ("recovery", "Recovery", ""),
-    ("incremental", "Incremental", if (inScope("incremental")) incrementalContent else ""),
-    ("memory", "Memory Benchmarks", if (memoryTabs.nonEmpty) withNav("<h2>Per Language</h2>", memoryTabs) else ""),
+    ("incremental", "Incremental", incrementalContent),
+    ("memory", "Memory Benchmarks", memoryContent),
 )
 
 write.over(

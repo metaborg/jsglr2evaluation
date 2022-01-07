@@ -44,6 +44,8 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
     
     def measurementsDir(implicit suite: Suite) = suite.measurementsDir / id
 
+    def incrementalResultsDir(implicit suite: Suite) = Suite.incrementalResultsDir / id
+
     def measurementsBatch(source: Option[BatchSource], variant: String = "standard")(implicit suite: Suite) = {
         val measurementsCSV = (source match {
             case None         => measurementsDir / "batch"
@@ -84,6 +86,37 @@ case class Language(id: String, name: String, extension: String, parseTable: Par
                     avgs, avgPercs, skewAvgs, skewAvgPercs
                 )
         }
+    }
+
+    def benchmarksIncremental(parseImplode: String, source: Option[IncrementalSource])(implicit suite: Suite): (
+        Seq[Map[String, Double]], Map[String, Double]
+    ) = {
+        source match {
+            case None =>
+                val rows = sources.incremental.map(source => benchmarksIncremental(parseImplode, Some(source))._2)
+                (rows, rows.avgMaps)
+            case Some(source) =>
+                val timeRows = CSV.parse(incrementalResultsDir / s"${source.id}-${parseImplode}.csv").rows.map { row =>
+                    row.values.map{ case k -> v => k -> (if (v == "") Double.NaN else v.toDouble) }
+                }.filter(_("Size (bytes)") > 0)
+                val avgs = timeRows.drop(1).avgMaps
+                (timeRows, avgs)
+        }
+    }
+
+    def benchmarksMemory(implicit suite: Suite): (Map[String, Double], Map[String, Double]) = {
+        val memoryRows = CSV.parse(memoryBenchmarksDir / "batch.csv").rows.map(_.values)
+        val parsers = memoryRows.map(_("Parser")).distinct
+        val (keys1, keys2) = parsers.map { parser =>
+            val parserRows = memoryRows.filter(_("Parser") == parser)
+            val memoryPerByteIncls = parserRows.map(row => row("Memory (incl. garbage)").toDouble / row("Size").toDouble)
+            val memoryPerByteExcls = parserRows.map(row => row("Memory (excl. garbage)").toDouble / row("Size").toDouble)
+            (
+                parser -> (memoryPerByteIncls.sum / memoryPerByteIncls.length),
+                parser -> (memoryPerByteExcls.sum / memoryPerByteExcls.length)
+            )
+        }.unzip
+        (keys1.toMap, keys2.toMap)
     }
 
     def measurementsParseTable(implicit suite: Suite) =
@@ -218,6 +251,8 @@ case class Suite(configPath: Path, languages: Seq[Language], variants: Seq[Strin
     def memoryBenchmarksDir = dir / "memoryBenchmarks"
     def resultsDir          = dir / "results"
     def websiteDir          = dir / "website"
+
+    def jsglr2variants = variants.filter(_ != "jsglr1")
 
     def scopes = Seq(
         if (languages.exists(_.sources.batch.nonEmpty)) Some("batch") else None,
@@ -400,12 +435,12 @@ object IncrementalMeasurementsTableUtils {
 
     val measurementsCellsSkew = Seq(
         "createParseNode", "parseNodesReused", "parseNodesRebuilt", "shiftParseNode", "shiftCharacterNode",
-        "breakDowns", "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
+        "breakDowns", "breakDownHasChange", "breakDownIrreusable", "breakDownNoActions", "breakDownWrongState"
     )
 
     val measurementsCellsSummary = Seq(
         "parseNodesIrreusable", "parseNodesReused", "breakDowns", "parseNodesRebuilt",
-        "breakDownIrreusable", "breakDownNoActions", "breakDownTemporary", "breakDownWrongState"
+        "breakDownHasChange", "breakDownIrreusable", "breakDownNoActions", "breakDownWrongState"
     )
 
     val relativeTo = Map(
@@ -414,6 +449,7 @@ object IncrementalMeasurementsTableUtils {
         "parseNodesReused" -> "parseNodesPrev",
         "parseNodesRebuilt" -> "parseNodesPrev",
         "breakDowns" -> "parseNodesPrev",
+        "breakDownHasChange" -> "breakDowns",
         "breakDownIrreusable" -> "breakDowns",
         "breakDownNoActions" -> "breakDowns",
         "breakDownTemporary" -> "breakDowns",
@@ -428,7 +464,7 @@ object IncrementalMeasurementsTableUtils {
             row(key).toString
     }
 
-    def getAllMeasurements(languages: TraversableOnce[Language])(implicit suite: Suite) =
+    def getAllIncrementalMeasurements(languages: TraversableOnce[Language])(implicit suite: Suite) =
         languages.map(_.measurementsIncremental(None)).map {
             case (_, _, _, _, row, perc, skewRow, skewPerc) => (row, perc, skewRow, skewPerc)
         }.unzip4

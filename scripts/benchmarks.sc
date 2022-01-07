@@ -24,7 +24,7 @@ suite.languages.foreach { language =>
                 "-f", 1.toString,
                 "-rff", resultsPath.toString,
                 name,
-                "-jvmArgs=\"-DtestSet=" + testSetArgs.mkString(" ") + "\""
+                "-jvmArgs=\"-DtestSet=" + testSetArgs.mkString(" ") + "\" -Xmx8G"
             ) ++ params.toSeq.flatMap {
                 case (param, value) => Seq("-p", s"$param=$value")
             }
@@ -71,7 +71,7 @@ suite.languages.foreach { language =>
         )
 
     def benchmarkJSGLRIncremental(name: String, resultsPath: Path, sourcePath: Path, params: Map[String, String] = Map.empty) = {
-        for (i <- -1 until (ls! sourcePath).length) {
+        for (i <- 0 until (ls! sourcePath).length) {
             println(f"    iteration $i%3d: start @ ${java.time.LocalDateTime.now}")
             if (i >= 0 && (ls! sourcePath / f"$i").isEmpty) {
                 println(f"      Skipped (no valid sources)")
@@ -130,7 +130,7 @@ suite.languages.foreach { language =>
         mkdir! reportDir
         
         timed(s"benchmark [JSGLR2/batch] (w: $warmupIterations, i: $benchmarkIterations) " + language.id + source.fold("")("/" + _.id)) {
-            benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> implode.toString, "variant" -> suite.variants.filter(_ != "jsglr1").mkString(",")))
+            benchmarkJSGLR("JSGLR2BenchmarkExternal", reportDir / "jsglr2.csv", sourcesDir, "multiple", Map("implode" -> implode.toString, "variant" -> suite.jsglr2variants.mkString(",")))
         }
 
         if (suite.variants.contains("jsglr1")) {

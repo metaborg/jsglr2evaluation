@@ -58,7 +58,7 @@ COPY docker/Makefile .
 ENV SPOOFAX_VERSION=master
 ENV JSGLR_VERSION=develop/jsglr2
 ENV JSGLR_REMOTE_NAME?=origin
-ENV JSGLR_REMOTE_URL?=http://github.com/metaborg/jsglr
+ENV JSGLR_REMOTE_URL?=https://github.com/metaborg/jsglr
 
 ENV DATA_DIR=/jsglr2evaluation/data
 ENV SPOOFAX_DIR=/jsglr2evaluation/data/spoofax

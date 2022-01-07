@@ -5,7 +5,7 @@
 SPOOFAX_VERSION?=master
 SDF_VERSION?=develop/jsglr2
 JSGLR_REMOTE_NAME?=origin
-JSGLR_REMOTE_URL?=http://github.com/metaborg/jsglr
+JSGLR_REMOTE_URL?=https://github.com/metaborg/jsglr
 JSGLR_VERSION?=develop/jsglr2
 EVALUATION_TARGET?=all
 

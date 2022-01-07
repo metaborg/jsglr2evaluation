@@ -1,6 +1,8 @@
 import csv
+import math
 from os import makedirs, path, scandir, remove, environ
 
+import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import pdftools
@@ -11,6 +13,7 @@ FIGURES_DIR = environ["JSGLR2EVALUATION_FIGURES_DIR"]
 COLORS = {
     "Standard": "rs",
     "Elkhound": "pm",
+    "Recovery": "o",
     "Incremental": "g^",
     "IncrementalNoCache": "bv",
     "TreeSitterIncremental": "g2",
@@ -20,10 +23,13 @@ COLORS = {
 LABELS = {
     "jsglr2-standard": "Standard",
     "jsglr2-elkhound": "Elkhound",
+    "jsglr2-recovery": "Recovery",
     "jsglr2-incremental": "IncrementalNoCache"
 }
 
 MiB = 1024 * 1024
+
+matplotlib.rcParams.update({'font.size': 14})
 
 
 def convert_label(label, incremental=False):
@@ -48,13 +54,13 @@ def read_csv(p):
         return [{h: v for h, v in zip(header, line)} for line in lines[1:]]
 
 
-def base_plot(plot_size, title, x_label, y_label, z_label="", subplot_kwargs=None):
+def base_plot(plot_size, title, x_label, y_label, z_label="", subplot_kwargs=None, legend_height=1):
     fig = plt.figure(figsize=plot_size[:2])
     ax = fig.add_subplot(**(subplot_kwargs if subplot_kwargs is not None else {}))
 
     ax.margins(*(0.1 / x for x in plot_size))
 
-    ax.set_title(title, y=1.0 + 0.6 / float(plot_size[1]), va="bottom")
+    ax.set_title(title, y=0.91 + 0.09 * legend_height + 0.6 / float(plot_size[1]), va="bottom")
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     if z_label:
@@ -125,7 +131,8 @@ def plot_memory_incremental(rows, garbage):
 def plot_times(rows, parser_types):
     n = len(rows)
     plot_size = (8 if n < 50 else 12 if n < 100 else 18 if n < 200 else 24, 6)
-    fig, ax1 = base_plot(plot_size, "Parse time and change size per version", "Version number", "Parse time (ms)")
+    fig, ax1 = base_plot(plot_size, "Parse time and change size per version", "Version number", "Parse time (ms)",
+                         legend_height=math.ceil((len(parser_types) + 1) / 3))
 
     # Plot lines on ax2 below those on ax1 (https://stackoverflow.com/a/57307539)
     ax1.set_zorder(1)  # default z order is 0 for ax1 and ax2
@@ -151,7 +158,7 @@ def plot_times(rows, parser_types):
     # Combine legends for both axes (https://stackoverflow.com/a/10129461)
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines1 + lines2, labels1 + labels2, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
+    ax2.legend(lines1 + lines2, labels1 + labels2, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3)
 
     max_i = max(float(row["i"]) for row in rows)
     ax1.set_xlim(-max_i / 50, max_i + max_i / 50)
@@ -163,7 +170,7 @@ def plot_times(rows, parser_types):
 
 
 def plot_times_vs_changes(rows, unit, *changes):
-    fig, ax = base_plot((8, 6), "Parse time vs. change size", f"Change size ({unit})", "Parse time (ms)")
+    fig, ax = base_plot((8, 6), "Parse time vs. change size", f"Change size ({unit})", "Parse time (ms)", legend_height=0)
 
     x, y = zip(*((sum(int(row[change]) for change in changes), float(row["Incremental"]))
                  for row in rows if row["Incremental"]))
@@ -177,8 +184,8 @@ def plot_times_vs_changes(rows, unit, *changes):
 
 
 def plot_times_vs_changes_3d(rows):
-    fig, ax = base_plot((6, 6, 6), "Parse time vs. change size", "Change size (bytes)", "Change size (chunks)", "Parse time (ms)",
-                        {"projection": "3d"})
+    fig, ax = base_plot((8, 8, 8), "Parse time vs. change size", "Change size (bytes)", "Change size (chunks)", "Parse time (ms)",
+                        {"projection": "3d"}, legend_height=1)
 
     x, y, z = zip(*((int(row["Added"]) + int(row["Removed"]), int(row["Changes"]), float(row["Incremental"]))
                     for row in rows if row["Incremental"]))
@@ -221,7 +228,7 @@ def main():
                 csv_basename = ".".join(result_file.name.split(".")[:-1])
                 print(f"  {csv_basename}")
 
-                result_data = read_csv(result_file.path)
+                result_data = [row for row in read_csv(result_file.path) if row["Size (bytes)"] != "0"]
                 result_data[0]["Added"] = None
                 result_data_except_first = result_data[1:]
 
@@ -253,7 +260,7 @@ def main():
                 pdftools.pdf_merge([path.join(figure_path, name + ".pdf") for _, name in figures], merged_path)
 
     memory_benchmarks_dir = path.join(DATA_DIR, "memoryBenchmarks")
-    
+
     if path.isdir(memory_benchmarks_dir):
         print("Creating plots for memory benchmarks...")
         for language in scandir(memory_benchmarks_dir):
